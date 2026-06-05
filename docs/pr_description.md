@@ -11,8 +11,8 @@ This PR materializes the foundational directory structure and asset ecosystem fo
 ## Key Changes
 
 1. **Security & Primitives Hardening**
-   - Updated `/tmp/workspace/kampalalove/ogencomplex/edge/main.go` to enforce deterministic float-to-string conversion in `computeHash`, preventing drift during state validation.
-   - Hardened `/tmp/workspace/kampalalove/ogencomplex/tests/stress_suite.py` by using explicit argument lists and rigid execution timeouts.
+   - Updated `edge/main.go` to enforce deterministic float-to-string conversion in `computeHash`, preventing drift during state validation.
+   - Hardened `tests/stress_suite.py` by using explicit argument lists and rigid execution timeouts.
 2. **Compliance Framework**
    - Added SOC 2 readiness checklist and a BAA template.
    - Added formal policies for Access Control, Data Retention, and Incident Response.
