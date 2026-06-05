@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"time"
 )
 
 type StateVector struct {
@@ -25,6 +24,5 @@ func computeHash(sv StateVector) string {
 
 func main() {
 	fmt.Println("Veritas Edge Kernel (offline‑first)")
-	_ = time.Now()
 	// Ingest, verify, chain, write‑ahead log, replay
 }

@@ -3,14 +3,17 @@
 
 import subprocess
 import time
+import shlex
 
 
 def run_test(name, cmd):
     print(f"\n--- {name} ---")
     start = time.time()
-    result = subprocess.run(cmd, shell=True, capture_output=True)
+    result = subprocess.run(shlex.split(cmd), capture_output=True)
     elapsed = time.time() - start
     print(f"Exit: {result.returncode}, Time: {elapsed:.2f}s")
+    if result.returncode != 0 and result.stderr:
+        print(result.stderr.decode(errors="replace"))
     return result.returncode == 0
 
 
