@@ -16,6 +16,13 @@ This repository contains:
 See the [runbooks](./runbooks) for site‑specific instructions.  
 For compliance, start with [SOC 2 readiness](./docs/soc2_readiness.md) and the [BAA template](./docs/BAA_template.md).
 
+## Program Documents
+
+- [Veritas Master Document](./docs/veritas_master_document.md)
+- [Integrated Release Notes](./docs/release_notes_veritas_integrated.md)
+- [Project Charter](./docs/project_charter_veritas.md)
+- [Deployment Binder](./docs/deployment_binder_veritas.md)
+
 ## Doctrine
 
 1. Verify every space before advancing  
