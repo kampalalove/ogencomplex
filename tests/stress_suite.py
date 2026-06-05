@@ -5,12 +5,16 @@ import subprocess
 import time
 import shlex
 
+TEST_TIMEOUT_SECONDS = 60
+
 
 def run_test(name, cmd):
     print(f"\n--- {name} ---")
     start = time.time()
     try:
-        result = subprocess.run(shlex.split(cmd), capture_output=True, timeout=60)
+        result = subprocess.run(
+            shlex.split(cmd), capture_output=True, timeout=TEST_TIMEOUT_SECONDS
+        )
     except subprocess.TimeoutExpired:
         elapsed = time.time() - start
         print(f"Exit: timeout, Time: {elapsed:.2f}s")
