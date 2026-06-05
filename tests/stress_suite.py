@@ -9,11 +9,19 @@ import shlex
 def run_test(name, cmd):
     print(f"\n--- {name} ---")
     start = time.time()
-    result = subprocess.run(shlex.split(cmd), capture_output=True)
+    try:
+        result = subprocess.run(shlex.split(cmd), capture_output=True, timeout=60)
+    except subprocess.TimeoutExpired:
+        elapsed = time.time() - start
+        print(f"Exit: timeout, Time: {elapsed:.2f}s")
+        return False
     elapsed = time.time() - start
     print(f"Exit: {result.returncode}, Time: {elapsed:.2f}s")
-    if result.returncode != 0 and result.stderr:
-        print(result.stderr.decode(errors="replace"))
+    if result.returncode != 0:
+        if result.stderr:
+            print(result.stderr.decode(errors="replace"))
+        if result.stdout:
+            print(result.stdout.decode(errors="replace"))
     return result.returncode == 0
 
 
