@@ -18,7 +18,7 @@ type StateVector struct {
 }
 
 func computeHash(sv StateVector) string {
-	value := strconv.FormatFloat(sv.Value, 'f', -1, 64)
+	value := strconv.FormatFloat(sv.Value, 'f', 6, 64)
 	data := fmt.Sprintf("%s|%s|%s|%s", sv.Timestamp, sv.SensorID, value, sv.PrevHash)
 	hash := sha256.Sum256([]byte(data))
 	return hex.EncodeToString(hash[:])

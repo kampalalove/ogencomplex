@@ -3,18 +3,16 @@
 
 import subprocess
 import time
-import shlex
 
 TEST_TIMEOUT_SECONDS = 60
+TEST_COOLDOWN_SECONDS = 2
 
 
 def run_test(name, cmd):
     print(f"\n--- {name} ---")
     start = time.time()
     try:
-        result = subprocess.run(
-            shlex.split(cmd), capture_output=True, timeout=TEST_TIMEOUT_SECONDS
-        )
+        result = subprocess.run(cmd, capture_output=True, timeout=TEST_TIMEOUT_SECONDS)
     except subprocess.TimeoutExpired:
         elapsed = time.time() - start
         print(f"Exit: timeout, Time: {elapsed:.2f}s")
@@ -30,19 +28,19 @@ def run_test(name, cmd):
 
 
 tests = {
-    "Telemetry drop": "python3 inject_telemetry_drop.py",
-    "Stale data": "python3 inject_stale.py --seconds 6",
-    "Clock skew": "python3 inject_skew.py --seconds 5",
-    "Rule conflict": "python3 inject_rule_conflict.py",
-    "Financial starvation": "python3 inject_financial_starvation.py",
-    "Actuator timeout": "python3 inject_actuator_timeout.py",
-    "Ledger mismatch": "python3 inject_ledger_mismatch.py",
+    "Telemetry drop": ["python3", "inject_telemetry_drop.py"],
+    "Stale data": ["python3", "inject_stale.py", "--seconds", "6"],
+    "Clock skew": ["python3", "inject_skew.py", "--seconds", "5"],
+    "Rule conflict": ["python3", "inject_rule_conflict.py"],
+    "Financial starvation": ["python3", "inject_financial_starvation.py"],
+    "Actuator timeout": ["python3", "inject_actuator_timeout.py"],
+    "Ledger mismatch": ["python3", "inject_ledger_mismatch.py"],
 }
 
 passed = 0
 for name, cmd in tests.items():
     if run_test(name, cmd):
         passed += 1
-    time.sleep(2)
+    time.sleep(TEST_COOLDOWN_SECONDS)
 
 print(f"\nPassed {passed}/{len(tests)} failure modes")
