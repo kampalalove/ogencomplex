@@ -114,7 +114,7 @@ def main():
     print(f"   -> Abort Exception Payload: {result_b.get('reason')}")
 
     # Scenario C
-    print("\n�� [SCENARIO C]: Launching Direct Compromised Master Key Attack...")
+    print("\n💥 [SCENARIO C]: Launching Direct Compromised Master Key Attack...")
     print("   [Action] Appending active key ID explicitly into the global Revocation List.")
     with open(REVOCATION_LIST, "a", encoding="utf-8") as f:
         f.write(json.dumps({"key_id": active_key_id, "revoked_at": now.isoformat().replace("+00:00", "Z")}) + "\n")

@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -17,6 +18,12 @@ BASE_DIR = Path(__file__).parent
 REGISTRY_DIR = BASE_DIR / "registry"
 ASSESSMENT_DIR = BASE_DIR / "assessment_definitions"
 KEYS_DIR = BASE_DIR / "keys"
+PROF_KEY_PATHS = {
+    "PROF_MARK": {
+        "private": KEYS_DIR / "prof_PROF_MARK_priv.pem",
+        "public": KEYS_DIR / "prof_PROF_MARK_pub.pem",
+    }
+}
 
 EVIDENCE_VAULT = REGISTRY_DIR / "evidence_vault.jsonl"
 AUDIT_LOG = REGISTRY_DIR / "audit_chain.jsonl"
@@ -77,9 +84,11 @@ def _load_jsonl(path: Path) -> List[Dict[str, Any]]:
 
 
 def _ensure_professor_key(prof_id: str = "PROF_MARK") -> str:
+    if prof_id not in PROF_KEY_PATHS:
+        raise ValueError(f"Unknown professor id: {prof_id}")
     KEYS_DIR.mkdir(parents=True, exist_ok=True)
-    priv_path = KEYS_DIR / f"prof_{prof_id}_priv.pem"
-    pub_path = KEYS_DIR / f"prof_{prof_id}_pub.pem"
+    priv_path = PROF_KEY_PATHS[prof_id]["private"]
+    pub_path = PROF_KEY_PATHS[prof_id]["public"]
 
     if not priv_path.exists() or not pub_path.exists():
         priv = rsa.generate_private_key(public_exponent=65537, key_size=2048)
@@ -204,10 +213,19 @@ def build_credential_from_audit(audit_hash: str) -> Dict[str, Any]:
     raise ValueError("Audit hash not found")
 
 
+def _normalize_prof_id(prof_id: str) -> str:
+    if not re.fullmatch(r"[A-Z0-9_]{1,32}", prof_id or ""):
+        raise ValueError("Professor ID must be 1-32 uppercase alphanumeric characters or underscores")
+    if prof_id not in PROF_KEY_PATHS:
+        raise ValueError("Unknown professor id")
+    return prof_id
+
+
 def sign_with_professor_private_key(message: bytes, prof_id: str) -> str:
-    key_path = KEYS_DIR / f"prof_{prof_id}_priv.pem"
+    safe_prof_id = _normalize_prof_id(prof_id)
+    key_path = PROF_KEY_PATHS[safe_prof_id]["private"]
     if not key_path.exists():
-        raise FileNotFoundError(f"Private key for {prof_id} not found")
+        raise FileNotFoundError(f"Private key for {safe_prof_id} not found")
     priv_key = serialization.load_pem_private_key(key_path.read_bytes(), None)
     signature = priv_key.sign(
         message,
@@ -273,6 +291,11 @@ async def issue_diploma(req: IssueRequest):
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=f"Registry invalid: {str(exc)}") from exc
 
+    try:
+        safe_prof_id = _normalize_prof_id(req.prof_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     if not audit_hash_exists(req.assessment_hash):
         raise HTTPException(status_code=400, detail="assessment_hash not found in audit chain")
 
@@ -282,15 +305,15 @@ async def issue_diploma(req: IssueRequest):
         raise HTTPException(status_code=400, detail="Failed to rebuild credential") from exc
 
     try:
-        signature = sign_with_professor_private_key(req.assessment_hash.encode("utf-8"), req.prof_id)
+        signature = sign_with_professor_private_key(req.assessment_hash.encode("utf-8"), safe_prof_id)
     except FileNotFoundError as exc:
-        raise HTTPException(status_code=403, detail=f"Professor key not available for {req.prof_id}") from exc
+        raise HTTPException(status_code=403, detail=f"Professor key not available for {safe_prof_id}") from exc
 
     diploma = {
         "metadata": cred["metadata"],
         "adjudication": cred["adjudication"],
         "signature_block": {
-            "key_id": f"KEY_{req.prof_id}_ACTIVE",
+            "key_id": f"KEY_{safe_prof_id}_ACTIVE",
             "signed_at": _utc_now(),
             "signature": signature,
         },
