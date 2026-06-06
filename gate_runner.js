@@ -173,11 +173,15 @@ function main() {
     console.log(' -> [PASS] State Gate & Evidence Gate: Lifecycle transitions structurally absolute.');
 
     console.log('\nExecuting Normal Path Performance Evaluation...');
-    masterRunner.executeCriticalPath(sampleInputPayload, false);
+    const normalRunner = new OgenGateRunner();
+    normalRunner.enforceSovereigntyGate();
+    normalRunner.executeCriticalPath(sampleInputPayload, false);
     console.log(` -> [PASS] Time Gate: Loop completed within ${CONFIG.TIME_GATE.MAX_EXECUTION_MS}ms safety ceiling.`);
 
     console.log('\nInducing Artificial Processing Drift (Testing Time Gate Breaker)...');
-    masterRunner.executeCriticalPath(sampleInputPayload, true);
+    const driftRunner = new OgenGateRunner();
+    driftRunner.enforceSovereigntyGate();
+    driftRunner.executeCriticalPath(sampleInputPayload, true);
   } catch (error) {
     console.error(`\n[GATE SEVERANCE TRIGGERED]: ${error.message}`);
     if (String(error.message).includes('TIME_VIOLATION')) {

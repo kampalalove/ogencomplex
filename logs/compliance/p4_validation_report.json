@@ -1,7 +1,7 @@
 {
   "status": "ok",
   "mode": "strict",
-  "validatedAt": "2026-06-06T08:04:30.965Z",
+  "validatedAt": "2026-06-06T08:05:15.319Z",
   "manifestValidation": {
     "status": "ok",
     "target": "compliance",
@@ -54,15 +54,15 @@
     },
     {
       "path": "logs/compliance/p4_registry_sign.hash",
-      "sha256": "a63898fa7d07ca631eaf21fe5d373f1fb0373155d6df4dde3249c17c1aeeaa9d",
+      "sha256": "f1d286774d9fb6cd0aa59f4c40b68506d9c9619e30c7439df46a5cbdff7f868b",
       "sizeBytes": 1066,
-      "modifiedAt": "2026-06-06T08:04:30.897Z"
+      "modifiedAt": "2026-06-06T08:05:15.250Z"
     },
     {
       "path": "logs/compliance/p4_validation_report.json",
-      "sha256": "252c40390a84e27f6d7b26a1c55a0534f8400fd9190db4a4a6d19ab53ef7bdbb",
+      "sha256": "98bd84644b1806ae77c1cfa03b99d717a2b64c7a013a9e4340382e10f0b428ae",
       "sizeBytes": 2611,
-      "modifiedAt": "2026-06-06T08:04:30.898Z"
+      "modifiedAt": "2026-06-06T08:05:15.251Z"
     },
     {
       "path": "logs/compliance/p5_simulation_delta.json",
