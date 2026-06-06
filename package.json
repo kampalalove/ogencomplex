@@ -11,6 +11,7 @@
     "start": "OGEN_PROTOCOL_PROFILE=v1.1 node udp_websocket_bridge.js",
     "start:stable": "OGEN_PROTOCOL_PROFILE=v1.0.1 node udp_websocket_bridge.js",
     "start:v1.1": "OGEN_PROTOCOL_PROFILE=v1.1 node udp_websocket_bridge.js",
+    "gate": "node gate_runner.js",
     "test": "node tests/run_deterministic_evidence.js && node tests/run_ops_deterministic.js",
     "evidence": "node tests/run_deterministic_evidence.js --write-bundle && node tests/run_ops_deterministic.js --write-bundle",
     "ops": "node ops_cli.js",
