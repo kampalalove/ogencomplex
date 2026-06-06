@@ -1,0 +1,13 @@
+{
+  "name": "ogen-ground-station-bridge",
+  "version": "1.0.1",
+  "description": "Deterministic Binary Protocol Bridge Engine for OGEN EDGE",
+  "main": "udp_websocket_bridge.js",
+  "dependencies": {
+    "protobufjs": "^7.3.0",
+    "ws": "^8.18.0"
+  },
+  "scripts": {
+    "start": "node udp_websocket_bridge.js"
+  }
+}

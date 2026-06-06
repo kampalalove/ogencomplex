@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package ogen.protocol;
+
+// Type ID: 0x01 - Dispatched from User Viewport to Drone Planner
+message TrajectoryCommand {
+  uint64 timestamp_us = 1;
+  uint32 command_id = 2;
+  
+  double target_x = 3;   // Standard ENU meters
+  double target_y = 4;
+  double target_z = 5;
+  float target_yaw = 6;  // Radians
+  
+  // v1.0.1 Configuration Overrides
+  float max_velocity = 7;     // Optional speed constraint (m/s)
+  float max_acceleration = 8; // Optional acceleration constraint (m/s^2)
+}
+
+// Type ID: 0x02 - Streamed continuously at 20Hz from Drone to UI
+message TelemetryStream {
+  uint64 timestamp_us = 1;
+  uint32 flight_status = 2; // Bitmask: [Armed:Bit0 | Offboard:Bit1 | Landed:Bit2]
+  
+  double pose_x = 3;
+  double pose_y = 4;
+  double pose_z = 5;
+  
+  float q_w = 6;
+  float q_x = 7;
+  float q_y = 8;
+  float q_z = 9;
+  
+  float battery_percentage = 10;
+}
+
+// Type ID: 0x03 - Packed sparse delta-arrays streamed from TSDF Layer to UI
+message VoxelDeltaChunk {
+  uint64 timestamp_us = 1;
+  uint32 chunk_id = 2;
+  
+  message VoxelData {
+    int64 idx_x = 1;
+    int64 idx_y = 2;
+    int64 idx_z = 3;
+    float tsdf_distance = 4;
+    uint32 semantic_class = 5;
+  }
+  
+  repeated VoxelData voxels = 3;
+}

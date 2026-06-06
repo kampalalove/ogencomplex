@@ -1,28 +1,257 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>The OGEN Complex</title>
-  <style>
-    body {
-      margin: 0;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      font-family: Arial, sans-serif;
-      background: #ffffff;
-      color: #000000;
-    }
-    main { text-align: center; }
-    h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
-    p { font-size: 1.2rem; opacity: 0.7; }
-  </style>
+    <meta charset="UTF-8">
+    <title>OGEN EDGE // SPATIAL ENGINE</title>
+    <style>
+        body { margin: 0; background: #0b0c10; color: #66fcf1; font-family: monospace; overflow: hidden; }
+        #canvas-container { width: 100vw; height: 100vh; position: absolute; z-index: 1; }
+        #ui-overlay { position: absolute; z-index: 2; top: 20px; left: 20px; background: rgba(11,12,16,0.9); padding: 20px; border: 1px solid #1f2833; border-radius: 4px; pointer-events: none; width: 320px; }
+        .stat-line { margin: 8px 0; border-left: 3px solid #66fcf1; padding-left: 8px; }
+        .value { color: #fff; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/protobufjs@7.3.0/dist/protobuf.min.js"></script>
 </head>
 <body>
-  <main>
-    <h1>The OGEN Complex</h1>
-    <p>Coming Soon</p>
-  </main>
+
+    <div id="ui-overlay">
+        <h3>OGEN EDGE // SPATIAL OS</h3>
+        <hr style="border-color:#1f2833;">
+        <div class="stat-line">SYSTEM LINK: <span id="link-state" style="color: #ff3838;">OFFLINE</span></div>
+        <div class="stat-line">DRONE XYZ: <span id="drone-pos" class="value">0.00, 0.00, 0.00</span></div>
+        <div class="stat-line">BATTERY: <span id="drone-bat" class="value">0%</span></div>
+        <div class="stat-line">VOXELS IN MEMORY: <span id="voxel-count" class="value">0</span></div>
+        <hr style="border-color:#1f2833;">
+        <div class="stat-line" style="border-color: #ffbd03;">COMMAND TARGET:<br><span id="target-pos" class="value">CLICK MAP TO TARGET</span></div>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <script>
+        // --- PROTOBUF CONTRACT STRIP ---
+        const protoSrc = `
+            syntax = "proto3";
+            package ogen.protocol;
+            message TrajectoryCommand {
+                uint64 timestamp_us = 1;
+                uint32 command_id = 2;
+                double target_x = 3;
+                double target_y = 4;
+                double target_z = 5;
+                float target_yaw = 6;
+                float max_velocity = 7;
+                float max_acceleration = 8;
+            }
+            message TelemetryStream {
+                uint64 timestamp_us = 1;
+                uint32 flight_status = 2;
+                double pose_x = 3;
+                double pose_y = 4;
+                double pose_z = 5;
+                float q_w = 6; float q_x = 7; float q_y = 8; float q_z = 9;
+                float battery_percentage = 10;
+            }
+            message VoxelDeltaChunk {
+                uint64 timestamp_us = 1;
+                uint32 chunk_id = 2;
+                message VoxelData {
+                    int64 idx_x = 1; int64 idx_y = 2; int64 idx_z = 3;
+                    float tsdf_distance = 4; uint32 semantic_class = 5;
+                }
+                repeated VoxelData voxels = 3;
+            }
+        `;
+
+        let TrajectoryCommand, TelemetryStream, VoxelDeltaChunk;
+        const parsed = protobuf.parse(protoSrc);
+        const root = parsed.root;
+        TrajectoryCommand = root.lookupType("ogen.protocol.TrajectoryCommand");
+        TelemetryStream = root.lookupType("ogen.protocol.TelemetryStream");
+        VoxelDeltaChunk = root.lookupType("ogen.protocol.VoxelDeltaChunk");
+
+        // --- WEBGL SPATIAL ENGINE ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0b0c10);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        container.appendChild(renderer.domElement);
+
+        // Lighting & Terrain Base
+        const ambientLight = new THREE.AmbientLight(0x333333);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(10, 20, 10);
+        scene.add(dirLight);
+
+        const groundGrid = new THREE.GridHelper(100, 100, 0x1f2833, 0x1f2833);
+        scene.add(groundGrid);
+
+        // Target Plane for ground clicks
+        const planeGeo = new THREE.PlaneGeometry(100, 100);
+        planeGeo.rotateX(-Math.PI / 2);
+        const planeMat = new THREE.MeshBasicMaterial({ visible: false });
+        const groundPlane = new THREE.Mesh(planeGeo, planeMat);
+        scene.add(groundPlane);
+
+        // Drone Visual Target Marker
+        const droneGeo = new THREE.ConeGeometry(0.4, 1.0, 4);
+        droneGeo.rotateX(Math.PI / 2);
+        const droneMat = new THREE.MeshBasicMaterial({ color: 0x66fcf1, wireframe: true });
+        const droneMesh = new THREE.Mesh(droneGeo, droneMat);
+        scene.add(droneMesh);
+
+        camera.position.set(0, 15, 25);
+        camera.lookAt(0, 0, 0);
+
+        // Voxel Map Core Memory Cache
+        const voxelSize = 0.20;
+        const voxelMap = new Map();
+        const voxelGeometry = new THREE.BoxGeometry(voxelSize * 0.95, voxelSize * 0.95, voxelSize * 0.95);
+
+        const semanticMaterials = {
+            0: new THREE.MeshBasicMaterial({ color: 0x1f2833, wireframe: true }), // Unknown Structure
+            1: new THREE.MeshBasicMaterial({ color: 0xff3e3e }), // Piping Network
+            2: new THREE.MeshBasicMaterial({ color: 0xffbd03 }), // Control Valves
+            3: new THREE.MeshBasicMaterial({ color: 0x00ff87 }) // Storage Containment
+        };
+
+        // --- HIGH-SPEED RAYCASTING CLIFF INTERACTION ---
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        let cmdSequenceId = 0;
+
+        window.addEventListener('click', (event) => {
+            if (event.target !== renderer.domElement) return;
+
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+
+            // Prioritize asset voxel interaction, fallback to ground grid
+            const targets = [...voxelMap.values(), groundPlane];
+            const intersects = raycaster.intersectObjects(targets);
+
+            if (intersects.length > 0) {
+                const intersectPt = intersects[0].point;
+                document.getElementById('target-pos').innerText =
+                    `X: ${intersectPt.x.toFixed(2)} | Y: ${intersectPt.y.toFixed(2)} | Z: ${intersectPt.z.toFixed(2)}`;
+
+                transmitTrajectoryCommand(intersectPt.x, intersectPt.y, intersectPt.z);
+            }
+        });
+
+        // --- NETWORK STACK & PROTOCOL DESERIALIZATION ---
+        let ws;
+        function initNetwork() {
+            ws = new WebSocket("ws://localhost:8080");
+            ws.binaryType = "arraybuffer";
+
+            ws.onopen = () => {
+                document.getElementById('link-state').innerText = "STABLE";
+                document.getElementById('link-state').style.color = "#00ff87";
+            };
+
+            ws.onclose = () => {
+                document.getElementById('link-state').innerText = "OFFLINE";
+                document.getElementById('link-state').style.color = "#ff3838";
+                setTimeout(initNetwork, 2000);
+            };
+
+            ws.onmessage = (event) => {
+                const buffer = event.data;
+                const view = new DataView(buffer);
+                if (view.byteLength < 4 || view.getUint8(0) !== 0x5F) return; // Drop unverified frames
+
+                const payloadLength = view.getUint16(2, false);
+                if (buffer.byteLength !== 4 + payloadLength) return;
+
+                const typeId = view.getUint8(1);
+                const payload = new Uint8Array(buffer, 4);
+
+                if (typeId === 0x02 && TelemetryStream) {
+                    const msg = TelemetryStream.decode(payload);
+                    droneMesh.position.set(msg.pose_x, msg.pose_y, msg.pose_z);
+                    droneMesh.quaternion.set(msg.q_x, msg.q_y, msg.q_z, msg.q_w);
+                    document.getElementById('drone-pos').innerText = `${msg.pose_x.toFixed(2)}, ${msg.pose_y.toFixed(2)}, ${msg.pose_z.toFixed(2)}`;
+                    document.getElementById('drone-bat').innerText = `${msg.battery_percentage.toFixed(0)}%`;
+                } else if (typeId === 0x03 && VoxelDeltaChunk) {
+                    const msg = VoxelDeltaChunk.decode(payload);
+                    msg.voxels.forEach(v => {
+                        const idxX = Number(v.idx_x ?? v.idxX);
+                        const idxY = Number(v.idx_y ?? v.idxY);
+                        const idxZ = Number(v.idx_z ?? v.idxZ);
+                        const tsdf = v.tsdf_distance ?? v.tsdfDistance;
+                        const semantic = v.semantic_class ?? v.semanticClass;
+
+                        const key = `${idxX},${idxY},${idxZ}`;
+
+                        // If TSDF distance matches structural zero, spawn or rewrite voxel mesh
+                        if (tsdf <= 0.05) {
+                            if (!voxelMap.has(key)) {
+                                const mat = semanticMaterials[semantic] || semanticMaterials[0];
+                                const mesh = new THREE.Mesh(voxelGeometry, mat);
+                                mesh.position.set(idxX * voxelSize, idxY * voxelSize, idxZ * voxelSize);
+                                scene.add(mesh);
+                                voxelMap.set(key, mesh);
+                            }
+                        } else {
+                            // Clear voxel if space returns to free-air state
+                            if (voxelMap.has(key)) {
+                                scene.remove(voxelMap.get(key));
+                                voxelMap.delete(key);
+                            }
+                        }
+                    });
+                    document.getElementById('voxel-count').innerText = voxelMap.size;
+                }
+            };
+        }
+
+        function transmitTrajectoryCommand(x, y, z) {
+            if (!ws || ws.readyState !== WebSocket.OPEN || !TrajectoryCommand) return;
+
+            const payloadData = {
+                timestamp_us: Date.now() * 1000,
+                command_id: cmdSequenceId++,
+                target_x: x,
+                target_y: y,
+                target_z: z,
+                target_yaw: 0.0,
+                max_velocity: 4.5,
+                max_acceleration: 2.5
+            };
+
+            const payloadBuffer = TrajectoryCommand.encode(payloadData).finish();
+            const frameBuffer = new ArrayBuffer(4 + payloadBuffer.byteLength);
+            const view = new DataView(frameBuffer);
+
+            view.setUint8(0, 0x5F);
+            view.setUint8(1, 0x01);
+            view.setUint16(2, payloadBuffer.byteLength, false);
+            new Uint8Array(frameBuffer, 4).set(payloadBuffer);
+
+            ws.send(frameBuffer);
+        }
+
+        // --- RENDER ENVIRONMENT MATRIX ---
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        initNetwork();
+    </script>
 </body>
 </html>
