@@ -1,0 +1,6 @@
+[PASS] ops_template_registry :: {"templateCount":1,"templateId":"pipeline_patrol_v1"}
+[PASS] ops_manifest_hash :: {"manifestHash":"7fff5578ae078efb775f35bd23b7a5b12da2b1cb2949bebc58daedc6506da446","templateCount":1}
+[PASS] ops_audit_signature :: {"signature":"e8a9287939a41634630a0f620933ce2900592990680fd0ec46649628e1ed441f","missionId":"ops-mission-0001"}
+[PASS] ops_audit_tamper_detect :: {"valid":false}
+[PASS] manifest_validation_command :: {"status":"ok","manifestId":"ogen-core-runtime","version":"2.0.0-alpha","expansions":["ascs_2_0","ops_1_0","sim_1_0","ai_1_0"]}
+[PASS] initialize_expansions_smoke :: {"ready":true,"ops":true,"sim":true,"ascs":true,"ai":true}

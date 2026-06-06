@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
+const { execFileSync } = require('child_process');
 
 const {
   buildOpsManifest,
@@ -99,6 +100,38 @@ function runDeterministicOpsEvidence() {
     const valid = verifyAuditEntry(tampered, inputs.signing_key);
     assert.strictEqual(valid, expected.tampered_valid);
     return { valid };
+  });
+
+  runCase('manifest_validation_command', () => {
+    const output = execFileSync('node', ['tools/validate_manifest.js'], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+    });
+    const parsed = JSON.parse(output);
+    assert.strictEqual(parsed.status, 'ok');
+    assert.ok(parsed.expansions.includes('ops_1_0'));
+    assert.ok(parsed.expansions.includes('sim_1_0'));
+    assert.ok(parsed.expansions.includes('ascs_2_0'));
+    assert.ok(parsed.expansions.includes('ai_1_0'));
+    return parsed;
+  });
+
+  runCase('initialize_expansions_smoke', () => {
+    const output = execFileSync('python3', ['tools/initialize_expansions.py'], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+    });
+    assert.ok(output.includes('[OPS-1.0]'));
+    assert.ok(output.includes('[ASCS-2.0]'));
+    assert.ok(output.includes('[SIM-1.0]'));
+    assert.ok(output.includes('[READY]'));
+    return {
+      ready: true,
+      ops: output.includes('[OPS-1.0]'),
+      sim: output.includes('[SIM-1.0]'),
+      ascs: output.includes('[ASCS-2.0]'),
+      ai: output.includes('[AI-1.0]'),
+    };
   });
 
   const summary = {

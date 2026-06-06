@@ -1,7 +1,7 @@
 {
   "template_count": 1,
   "template_id": "pipeline_patrol_v1",
-  "manifest_hash": "3214c6f08f2ffed5e6eae401f03e16c8852533881f8c01758d28d5a65253d1aa",
-  "audit_signature": "d73af5939d81863216f3f618ec12042cc7541493018906a74f7ca2f8225ff616",
+  "manifest_hash": "7fff5578ae078efb775f35bd23b7a5b12da2b1cb2949bebc58daedc6506da446",
+  "audit_signature": "e8a9287939a41634630a0f620933ce2900592990680fd0ec46649628e1ed441f",
   "tampered_valid": false
 }
