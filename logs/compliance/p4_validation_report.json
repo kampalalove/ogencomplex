@@ -1,7 +1,7 @@
 {
   "status": "ok",
   "mode": "strict",
-  "validatedAt": "2026-06-06T06:22:18.003Z",
+  "validatedAt": "2026-06-06T08:04:30.965Z",
   "manifestValidation": {
     "status": "ok",
     "target": "compliance",
@@ -20,61 +20,61 @@
       "path": "logs/compliance/p1_spatial_drift.bin",
       "sha256": "b6e14a4de9d52a03eacf4583efc795b5d126f227bab8899258556eab2abbe68a",
       "sizeBytes": 24,
-      "modifiedAt": "2026-06-06T06:21:14.727Z"
+      "modifiedAt": "2026-06-06T08:04:10.087Z"
     },
     {
       "path": "logs/compliance/p1_sensor_heartbeat.json",
       "sha256": "1d9d85d1a732d5420e27a4e862f413db816e496efdcaf36356b3de7059068340",
       "sizeBytes": 61,
-      "modifiedAt": "2026-06-06T06:21:14.727Z"
+      "modifiedAt": "2026-06-06T08:04:10.086Z"
     },
     {
       "path": "logs/compliance/p2_trajectory_bounds.json",
       "sha256": "1d9d85d1a732d5420e27a4e862f413db816e496efdcaf36356b3de7059068340",
       "sizeBytes": 61,
-      "modifiedAt": "2026-06-06T06:21:14.727Z"
+      "modifiedAt": "2026-06-06T08:04:10.087Z"
     },
     {
       "path": "logs/compliance/p2_mesh_convergence.bin",
       "sha256": "b6e14a4de9d52a03eacf4583efc795b5d126f227bab8899258556eab2abbe68a",
       "sizeBytes": 24,
-      "modifiedAt": "2026-06-06T06:21:14.727Z"
+      "modifiedAt": "2026-06-06T08:04:10.087Z"
     },
     {
       "path": "logs/compliance/p3_command_sanitization.log",
       "sha256": "e6b466e9876ec5a9a8eb1fc4c69b9f31178cb0ca110b706e48133002b29f923d",
       "sizeBytes": 41,
-      "modifiedAt": "2026-06-06T06:21:14.727Z"
+      "modifiedAt": "2026-06-06T08:04:10.087Z"
     },
     {
       "path": "logs/compliance/p3_failsafe_triggers.json",
       "sha256": "1d9d85d1a732d5420e27a4e862f413db816e496efdcaf36356b3de7059068340",
       "sizeBytes": 61,
-      "modifiedAt": "2026-06-06T06:21:14.727Z"
+      "modifiedAt": "2026-06-06T08:04:10.087Z"
     },
     {
       "path": "logs/compliance/p4_registry_sign.hash",
-      "sha256": "f499e1842b0cb9dfeb0f9cff00aac277fd68ad988631fb0511af9ed7f1e9e14d",
+      "sha256": "a63898fa7d07ca631eaf21fe5d373f1fb0373155d6df4dde3249c17c1aeeaa9d",
       "sizeBytes": 1066,
-      "modifiedAt": "2026-06-06T06:22:17.937Z"
+      "modifiedAt": "2026-06-06T08:04:30.897Z"
     },
     {
       "path": "logs/compliance/p4_validation_report.json",
-      "sha256": "6f844b87e869eecffba5d3e19348762d92c3a8f4192e16bccf589005d84757f5",
+      "sha256": "252c40390a84e27f6d7b26a1c55a0534f8400fd9190db4a4a6d19ab53ef7bdbb",
       "sizeBytes": 2611,
-      "modifiedAt": "2026-06-06T06:22:17.938Z"
+      "modifiedAt": "2026-06-06T08:04:30.898Z"
     },
     {
       "path": "logs/compliance/p5_simulation_delta.json",
       "sha256": "1d9d85d1a732d5420e27a4e862f413db816e496efdcaf36356b3de7059068340",
       "sizeBytes": 61,
-      "modifiedAt": "2026-06-06T06:21:14.727Z"
+      "modifiedAt": "2026-06-06T08:04:10.087Z"
     },
     {
       "path": "logs/compliance/p5_inference_audit.bin",
       "sha256": "b6e14a4de9d52a03eacf4583efc795b5d126f227bab8899258556eab2abbe68a",
       "sizeBytes": 24,
-      "modifiedAt": "2026-06-06T06:21:14.727Z"
+      "modifiedAt": "2026-06-06T08:04:10.087Z"
     }
   ]
 }
