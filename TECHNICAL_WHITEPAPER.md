@@ -44,7 +44,7 @@ The runtime architecture is divided into three processing zones to isolate fligh
 |  |                                                                                                          |  |
 |  |   +----------------------------+                     +-----------------------------------------------+   |  |
 |  |   |   SharedVoxelMap Memory    |                     |          TrajectoryPlannerNode (C++)          |   |  |
-|  |   |   - Resolution: 0.05m      |<===================>|          - Global Pathfinding: 3D A* |   |  |
+|  |   |   - Resolution: 0.05m      |<===================>|          - Global Pathfinding: 3D A*            |   |  |
 |  |   |   - TSDF Voxel Array Grid  |  Direct Memory      |          - Local Optimization: Minimum-Snap   |   |  |
 |  |   +-------------+--------------+  Pointer Access     +-----------------------+-----------------------+   |  |
 |  |                 |                                                            |                           |  |
@@ -125,7 +125,7 @@ syntax = "proto3";
 package ogen.protocol;
 
 message TrajectoryCommand {
-  uint64 timestamp_us = 1; // Real-time Unix timestamp footprint
+  uint64 timestamp_us = 1; // Microseconds since Unix epoch (1970-01-01 00:00:00 UTC)
   uint32 command_id   = 2; // Incremental sequence index
   double target_x     = 3; // Target coordinate (ENU Easting)
   double target_y     = 4; // Target coordinate (ENU Northing)
@@ -139,7 +139,7 @@ Broadcasts at 20Hz to drive dashboard indicator instrumentation.
 
 ```protobuf
 message TelemetryStream {
-  uint64 timestamp_us       = 1;
+  uint64 timestamp_us       = 1;  // Microseconds since Unix epoch (1970-01-01 00:00:00 UTC)
   uint32 flight_status      = 2; // Bitmask: [Armed:Bit0 | Offboard:Bit1 | Landed:Bit2]
   double pose_x             = 3; // Centimeter-accurate local tracking position
   double pose_y             = 4;
@@ -157,14 +157,14 @@ Delta-compressed array packets containing structural updates to the local volume
 
 ```protobuf
 message VoxelDeltaChunk {
-  uint64 timestamp_us = 1;
+  uint64 timestamp_us = 1; // Microseconds since Unix epoch (1970-01-01 00:00:00 UTC)
   uint32 chunk_id     = 2;
   
   message VoxelData {
     int64  idx_x          = 1; // Discrete voxel grid coordinates
     int64  idx_y          = 2;
     int64  idx_z          = 3;
-    float  tsdf_distance  = 4; // Signed metric value [-1.0 to 1.0]
+    float  tsdf_distance  = 4; // clamped(distance_m / d_trunc, -1.0, 1.0), where d_trunc is the TSDF truncation distance threshold
     uint32 semantic_class = 5; // 0=Unknown, 1=Pipe, 2=Valve, 3=Tank
   }
   
@@ -237,7 +237,12 @@ If the primary VIO tracking signal drops completely while the aircraft is in a w
 
 ```cpp
 sp_msg.position[0] = std::nanf("");
-sp_msg.velocity[0] = 0.0f; // Force absolute zero velocity vectors across NED axes
+sp_msg.position[1] = std::nanf("");
+sp_msg.position[2] = std::nanf("");
+// Apply on all NED axes: NaN position + zero velocity for stabilized descent behavior.
+sp_msg.velocity[0] = 0.0f;
+sp_msg.velocity[1] = 0.0f;
+sp_msg.velocity[2] = 0.0f;
 ```
 
 This commands the flight controller to ignore position drift entirely and use raw inertial measurements to stabilize its attitude, executing a controlled vertical descent to the ground.
