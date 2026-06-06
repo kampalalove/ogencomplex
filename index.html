@@ -1,257 +1,243 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>OGEN EDGE // SPATIAL ENGINE</title>
-    <style>
-        body { margin: 0; background: #0b0c10; color: #66fcf1; font-family: monospace; overflow: hidden; }
-        #canvas-container { width: 100vw; height: 100vh; position: absolute; z-index: 1; }
-        #ui-overlay { position: absolute; z-index: 2; top: 20px; left: 20px; background: rgba(11,12,16,0.9); padding: 20px; border: 1px solid #1f2833; border-radius: 4px; pointer-events: none; width: 320px; }
-        .stat-line { margin: 8px 0; border-left: 3px solid #66fcf1; padding-left: 8px; }
-        .value { color: #fff; }
-    </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/protobufjs@7.3.0/dist/protobuf.min.js"></script>
+  <meta charset="UTF-8">
+  <title>OGEN EDGE // HARDENED CONTROL CORE</title>
+  <style>
+    body { margin: 0; background: #0b0c10; color: #66fcf1; font-family: monospace; overflow: hidden; user-select: none; }
+    #canvas-container { width: 100vw; height: 100vh; position: absolute; z-index: 1; }
+    #ui-overlay { position: absolute; z-index: 2; top: 20px; left: 20px; background: rgba(11,12,16,0.95); padding: 20px; border: 1px solid #1f2833; border-radius: 4px; pointer-events: none; width: 340px; box-shadow: 0 0 15px rgba(102,252,241,0.1); }
+    .stat-line { margin: 10px 0; border-left: 3px solid #66fcf1; padding-left: 8px; display: flex; justify-content: space-between; }
+    .value { color: #fff; font-weight: bold; }
+    #action-status { color: #ffbd03; font-weight: bold; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/protobufjs@7.3.0/dist/protobuf.min.js"></script>
 </head>
 <body>
 
-    <div id="ui-overlay">
-        <h3>OGEN EDGE // SPATIAL OS</h3>
-        <hr style="border-color:#1f2833;">
-        <div class="stat-line">SYSTEM LINK: <span id="link-state" style="color: #ff3838;">OFFLINE</span></div>
-        <div class="stat-line">DRONE XYZ: <span id="drone-pos" class="value">0.00, 0.00, 0.00</span></div>
-        <div class="stat-line">BATTERY: <span id="drone-bat" class="value">0%</span></div>
-        <div class="stat-line">VOXELS IN MEMORY: <span id="voxel-count" class="value">0</span></div>
-        <hr style="border-color:#1f2833;">
-        <div class="stat-line" style="border-color: #ffbd03;">COMMAND TARGET:<br><span id="target-pos" class="value">CLICK MAP TO TARGET</span></div>
+  <div id="ui-overlay">
+    <h3>OGEN EDGE // SPATIAL ENGINE</h3>
+    <hr style="border-color:#1f2833;">
+    <div class="stat-line"><span>NETWORK LINK:</span> <span id="link-state" style="color: #ff3838;">DISCONNECTED</span></div>
+    <div class="stat-line"><span>HEARTBEAT RTT:</span> <span id="link-rtt" class="value">-- ms</span></div>
+    <div class="stat-line"><span>AIRFRAME STATE:</span> <span id="drone-pos" class="value">0.00, 0.00, 0.00</span></div>
+    <div class="stat-line"><span>POWER ARRAY:</span> <span id="drone-bat" class="value">0%</span></div>
+    <div class="stat-line"><span>SPARSE VOXELS:</span> <span id="voxel-count" class="value">0</span></div>
+    <hr style="border-color:#1f2833;">
+    <div style="margin-top: 10px;">
+      <div id="action-status">LINK ENGINE INITIALIZING...</div>
     </div>
+  </div>
 
-    <div id="canvas-container"></div>
+  <div id="canvas-container"></div>
 
-    <script>
-        // --- PROTOBUF CONTRACT STRIP ---
-        const protoSrc = `
-            syntax = "proto3";
-            package ogen.protocol;
-            message TrajectoryCommand {
-                uint64 timestamp_us = 1;
-                uint32 command_id = 2;
-                double target_x = 3;
-                double target_y = 4;
-                double target_z = 5;
-                float target_yaw = 6;
-                float max_velocity = 7;
-                float max_acceleration = 8;
-            }
-            message TelemetryStream {
-                uint64 timestamp_us = 1;
-                uint32 flight_status = 2;
-                double pose_x = 3;
-                double pose_y = 4;
-                double pose_z = 5;
-                float q_w = 6; float q_x = 7; float q_y = 8; float q_z = 9;
-                float battery_percentage = 10;
-            }
-            message VoxelDeltaChunk {
-                uint64 timestamp_us = 1;
-                uint32 chunk_id = 2;
-                message VoxelData {
-                    int64 idx_x = 1; int64 idx_y = 2; int64 idx_z = 3;
-                    float tsdf_distance = 4; uint32 semantic_class = 5;
-                }
-                repeated VoxelData voxels = 3;
-            }
-        `;
-
-        let TrajectoryCommand, TelemetryStream, VoxelDeltaChunk;
-        const parsed = protobuf.parse(protoSrc);
-        const root = parsed.root;
-        TrajectoryCommand = root.lookupType("ogen.protocol.TrajectoryCommand");
-        TelemetryStream = root.lookupType("ogen.protocol.TelemetryStream");
-        VoxelDeltaChunk = root.lookupType("ogen.protocol.VoxelDeltaChunk");
-
-        // --- WEBGL SPATIAL ENGINE ---
-        const container = document.getElementById('canvas-container');
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x0b0c10);
-
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        container.appendChild(renderer.domElement);
-
-        // Lighting & Terrain Base
-        const ambientLight = new THREE.AmbientLight(0x333333);
-        scene.add(ambientLight);
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        dirLight.position.set(10, 20, 10);
-        scene.add(dirLight);
-
-        const groundGrid = new THREE.GridHelper(100, 100, 0x1f2833, 0x1f2833);
-        scene.add(groundGrid);
-
-        // Target Plane for ground clicks
-        const planeGeo = new THREE.PlaneGeometry(100, 100);
-        planeGeo.rotateX(-Math.PI / 2);
-        const planeMat = new THREE.MeshBasicMaterial({ visible: false });
-        const groundPlane = new THREE.Mesh(planeGeo, planeMat);
-        scene.add(groundPlane);
-
-        // Drone Visual Target Marker
-        const droneGeo = new THREE.ConeGeometry(0.4, 1.0, 4);
-        droneGeo.rotateX(Math.PI / 2);
-        const droneMat = new THREE.MeshBasicMaterial({ color: 0x66fcf1, wireframe: true });
-        const droneMesh = new THREE.Mesh(droneGeo, droneMat);
-        scene.add(droneMesh);
-
-        camera.position.set(0, 15, 25);
-        camera.lookAt(0, 0, 0);
-
-        // Voxel Map Core Memory Cache
-        const voxelSize = 0.20;
-        const voxelMap = new Map();
-        const voxelGeometry = new THREE.BoxGeometry(voxelSize * 0.95, voxelSize * 0.95, voxelSize * 0.95);
-
-        const semanticMaterials = {
-            0: new THREE.MeshBasicMaterial({ color: 0x1f2833, wireframe: true }), // Unknown Structure
-            1: new THREE.MeshBasicMaterial({ color: 0xff3e3e }), // Piping Network
-            2: new THREE.MeshBasicMaterial({ color: 0xffbd03 }), // Control Valves
-            3: new THREE.MeshBasicMaterial({ color: 0x00ff87 }) // Storage Containment
-        };
-
-        // --- HIGH-SPEED RAYCASTING CLIFF INTERACTION ---
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-        let cmdSequenceId = 0;
-
-        window.addEventListener('click', (event) => {
-            if (event.target !== renderer.domElement) return;
-
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-            raycaster.setFromCamera(mouse, camera);
-
-            // Prioritize asset voxel interaction, fallback to ground grid
-            const targets = [...voxelMap.values(), groundPlane];
-            const intersects = raycaster.intersectObjects(targets);
-
-            if (intersects.length > 0) {
-                const intersectPt = intersects[0].point;
-                document.getElementById('target-pos').innerText =
-                    `X: ${intersectPt.x.toFixed(2)} | Y: ${intersectPt.y.toFixed(2)} | Z: ${intersectPt.z.toFixed(2)}`;
-
-                transmitTrajectoryCommand(intersectPt.x, intersectPt.y, intersectPt.z);
-            }
-        });
-
-        // --- NETWORK STACK & PROTOCOL DESERIALIZATION ---
-        let ws;
-        function initNetwork() {
-            ws = new WebSocket("ws://localhost:8080");
-            ws.binaryType = "arraybuffer";
-
-            ws.onopen = () => {
-                document.getElementById('link-state').innerText = "STABLE";
-                document.getElementById('link-state').style.color = "#00ff87";
-            };
-
-            ws.onclose = () => {
-                document.getElementById('link-state').innerText = "OFFLINE";
-                document.getElementById('link-state').style.color = "#ff3838";
-                setTimeout(initNetwork, 2000);
-            };
-
-            ws.onmessage = (event) => {
-                const buffer = event.data;
-                const view = new DataView(buffer);
-                if (view.byteLength < 4 || view.getUint8(0) !== 0x5F) return; // Drop unverified frames
-
-                const payloadLength = view.getUint16(2, false);
-                if (buffer.byteLength !== 4 + payloadLength) return;
-
-                const typeId = view.getUint8(1);
-                const payload = new Uint8Array(buffer, 4);
-
-                if (typeId === 0x02 && TelemetryStream) {
-                    const msg = TelemetryStream.decode(payload);
-                    droneMesh.position.set(msg.pose_x, msg.pose_y, msg.pose_z);
-                    droneMesh.quaternion.set(msg.q_x, msg.q_y, msg.q_z, msg.q_w);
-                    document.getElementById('drone-pos').innerText = `${msg.pose_x.toFixed(2)}, ${msg.pose_y.toFixed(2)}, ${msg.pose_z.toFixed(2)}`;
-                    document.getElementById('drone-bat').innerText = `${msg.battery_percentage.toFixed(0)}%`;
-                } else if (typeId === 0x03 && VoxelDeltaChunk) {
-                    const msg = VoxelDeltaChunk.decode(payload);
-                    msg.voxels.forEach(v => {
-                        const idxX = Number(v.idx_x ?? v.idxX);
-                        const idxY = Number(v.idx_y ?? v.idxY);
-                        const idxZ = Number(v.idx_z ?? v.idxZ);
-                        const tsdf = v.tsdf_distance ?? v.tsdfDistance;
-                        const semantic = v.semantic_class ?? v.semanticClass;
-
-                        const key = `${idxX},${idxY},${idxZ}`;
-
-                        // If TSDF distance matches structural zero, spawn or rewrite voxel mesh
-                        if (tsdf <= 0.05) {
-                            if (!voxelMap.has(key)) {
-                                const mat = semanticMaterials[semantic] || semanticMaterials[0];
-                                const mesh = new THREE.Mesh(voxelGeometry, mat);
-                                mesh.position.set(idxX * voxelSize, idxY * voxelSize, idxZ * voxelSize);
-                                scene.add(mesh);
-                                voxelMap.set(key, mesh);
-                            }
-                        } else {
-                            // Clear voxel if space returns to free-air state
-                            if (voxelMap.has(key)) {
-                                scene.remove(voxelMap.get(key));
-                                voxelMap.delete(key);
-                            }
-                        }
-                    });
-                    document.getElementById('voxel-count').innerText = voxelMap.size;
-                }
-            };
+  <script>
+    const protoSrc = `
+      syntax = "proto3";
+      package ogen.protocol;
+      message TrajectoryCommand {
+        uint64 timestamp_us = 1; uint32 command_id = 2;
+        double target_x = 3; double target_y = 4; double target_z = 5;
+        float target_yaw = 6; float max_velocity = 7; float max_acceleration = 8;
+      }
+      message TelemetryStream {
+        uint64 timestamp_us = 1; uint32 flight_status = 2;
+        double pose_x = 3; double pose_y = 4; double pose_z = 5;
+        float q_w = 6; float q_x = 7; float q_y = 8; float q_z = 9;
+        float battery_percentage = 10;
+      }
+      message VoxelDeltaChunk {
+        uint64 timestamp_us = 1; uint32 chunk_id = 2;
+        message VoxelData {
+          int64 idx_x = 1; int64 idx_y = 2; int64 idx_z = 3;
+          float tsdf_distance = 4; uint32 semantic_class = 5;
         }
+        repeated VoxelData voxels = 3;
+      }
+    `;
 
-        function transmitTrajectoryCommand(x, y, z) {
-            if (!ws || ws.readyState !== WebSocket.OPEN || !TrajectoryCommand) return;
+    let TrajectoryCommand, TelemetryStream, VoxelDeltaChunk;
+    const parsed = protobuf.parse(protoSrc);
+    const root = parsed.root;
+    TrajectoryCommand = root.lookupType('ogen.protocol.TrajectoryCommand');
+    TelemetryStream = root.lookupType('ogen.protocol.TelemetryStream');
+    VoxelDeltaChunk = root.lookupType('ogen.protocol.VoxelDeltaChunk');
 
-            const payloadData = {
-                timestamp_us: Date.now() * 1000,
-                command_id: cmdSequenceId++,
-                target_x: x,
-                target_y: y,
-                target_z: z,
-                target_yaw: 0.0,
-                max_velocity: 4.5,
-                max_acceleration: 2.5
-            };
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0b0c10);
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight); container.appendChild(renderer.domElement);
+    scene.add(new THREE.AmbientLight(0x333333));
+    const groundGrid = new THREE.GridHelper(100, 100, 0x1f2833, 0x1f2833); scene.add(groundGrid);
 
-            const payloadBuffer = TrajectoryCommand.encode(payloadData).finish();
-            const frameBuffer = new ArrayBuffer(4 + payloadBuffer.byteLength);
-            const view = new DataView(frameBuffer);
+    const planeGeo = new THREE.PlaneGeometry(100, 100); planeGeo.rotateX(-Math.PI / 2);
+    const groundPlane = new THREE.Mesh(planeGeo, new THREE.MeshBasicMaterial({ visible: false })); scene.add(groundPlane);
 
-            view.setUint8(0, 0x5F);
-            view.setUint8(1, 0x01);
-            view.setUint16(2, payloadBuffer.byteLength, false);
-            new Uint8Array(frameBuffer, 4).set(payloadBuffer);
+    const droneMesh = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.0, 4), new THREE.MeshBasicMaterial({ color: 0x66fcf1, wireframe: true }));
+    droneMesh.geometry.rotateX(Math.PI / 2); scene.add(droneMesh);
+    camera.position.set(0, 15, 25); camera.lookAt(0, 0, 0);
 
-            ws.send(frameBuffer);
+    const voxelSize = 0.20; const voxelMap = new Map();
+    const voxelGeometry = new THREE.BoxGeometry(voxelSize * 0.95, voxelSize * 0.95, voxelSize * 0.95);
+    const mats = {
+      0: new THREE.MeshBasicMaterial({ color: 0x1f2833, wireframe: true }),
+      1: new THREE.MeshBasicMaterial({ color: 0xff3e3e }),
+      2: new THREE.MeshBasicMaterial({ color: 0xffbd03 }),
+      3: new THREE.MeshBasicMaterial({ color: 0x00ff87 }),
+    };
+
+    const raycaster = new THREE.Raycaster(); const mouse = new THREE.Vector2();
+    let cmdSequenceId = 0;
+
+    function getProtoNumber(obj, camelKey, snakeKey) {
+      const value = obj?.[camelKey] ?? obj?.[snakeKey] ?? 0;
+      return Number(value);
+    }
+
+    window.addEventListener('click', (event) => {
+      if (ws && ws.readyState === WebSocket.OPEN && event.target.tagName === 'CANVAS') {
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects([...voxelMap.values(), groundPlane]);
+
+        if (intersects.length > 0) {
+          const pt = intersects[0].point;
+          document.getElementById('action-status').innerText = 'SENDING TARGET ROUTE...';
+          transmitTrajectoryCommand(pt.x, pt.y, pt.z);
         }
+      }
+    });
 
-        // --- RENDER ENVIRONMENT MATRIX ---
-        function animate() {
-            requestAnimationFrame(animate);
-            renderer.render(scene, camera);
+    let ws;
+    let reconnectInterval = 1000;
+    const maxReconnectInterval = 16000;
+
+    function nextReconnectDelay(baseDelay) {
+      const jitter = Math.floor(Math.random() * 250);
+      return baseDelay + jitter;
+    }
+
+    function initNetworkStack() {
+      ws = new WebSocket('ws://localhost:8080');
+      ws.binaryType = 'arraybuffer';
+
+      ws.onopen = () => {
+        reconnectInterval = 1000;
+        document.getElementById('link-state').innerText = 'STABLE';
+        document.getElementById('link-state').style.color = '#00ff87';
+        document.getElementById('action-status').innerText = 'AWAITING OPERATOR INPUT';
+      };
+
+      ws.onclose = () => {
+        document.getElementById('link-state').innerText = 'DISCONNECTED';
+        document.getElementById('link-state').style.color = '#ff3838';
+        document.getElementById('link-rtt').innerText = '-- ms';
+        document.getElementById('action-status').innerText = `LINK LOSS. RECONNECTING IN ${(reconnectInterval / 1000).toFixed(0)}s...`;
+
+        const delay = nextReconnectDelay(reconnectInterval);
+        setTimeout(() => {
+          reconnectInterval = Math.min(reconnectInterval * 2, maxReconnectInterval);
+          initNetworkStack();
+        }, delay);
+      };
+
+      ws.onmessage = (event) => {
+        const buffer = event.data;
+        const view = new DataView(buffer);
+        if (view.byteLength < 4 || view.getUint8(0) !== 0x5F) return;
+
+        const payloadLength = view.getUint16(2, false);
+        if (view.byteLength !== 4 + payloadLength) return;
+
+        const typeId = view.getUint8(1);
+        const payload = new Uint8Array(buffer, 4);
+
+        if (typeId === 0x02 && TelemetryStream) {
+          const msg = TelemetryStream.decode(payload);
+          const poseX = getProtoNumber(msg, 'poseX', 'pose_x');
+          const poseY = getProtoNumber(msg, 'poseY', 'pose_y');
+          const poseZ = getProtoNumber(msg, 'poseZ', 'pose_z');
+          const qx = getProtoNumber(msg, 'qX', 'q_x');
+          const qy = getProtoNumber(msg, 'qY', 'q_y');
+          const qz = getProtoNumber(msg, 'qZ', 'q_z');
+          const qw = getProtoNumber(msg, 'qW', 'q_w');
+          const battery = getProtoNumber(msg, 'batteryPercentage', 'battery_percentage');
+          const timestampUs = getProtoNumber(msg, 'timestampUs', 'timestamp_us');
+
+          droneMesh.position.set(poseX, poseY, poseZ);
+          droneMesh.quaternion.set(qx, qy, qz, qw);
+          document.getElementById('drone-pos').innerText = `${poseX.toFixed(2)}, ${poseY.toFixed(2)}, ${poseZ.toFixed(2)}`;
+          document.getElementById('drone-bat').innerText = `${battery.toFixed(0)}%`;
+
+          const lat = (Date.now() * 1000) - timestampUs;
+          if (lat > 0) {
+            document.getElementById('link-rtt').innerText = `${(lat / 1000).toFixed(1)} ms`;
+          }
+        } else if (typeId === 0x03 && VoxelDeltaChunk) {
+          const msg = VoxelDeltaChunk.decode(payload);
+          msg.voxels.forEach((v) => {
+            const idxX = getProtoNumber(v, 'idxX', 'idx_x');
+            const idxY = getProtoNumber(v, 'idxY', 'idx_y');
+            const idxZ = getProtoNumber(v, 'idxZ', 'idx_z');
+            const tsdfDistance = getProtoNumber(v, 'tsdfDistance', 'tsdf_distance');
+            const semanticClass = getProtoNumber(v, 'semanticClass', 'semantic_class');
+
+            const key = `${idxX},${idxY},${idxZ}`;
+            if (tsdfDistance <= 0.05) {
+              if (!voxelMap.has(key)) {
+                const mesh = new THREE.Mesh(voxelGeometry, mats[semanticClass] || mats[0]);
+                mesh.position.set(idxX * voxelSize, idxY * voxelSize, idxZ * voxelSize);
+                scene.add(mesh); voxelMap.set(key, mesh);
+              }
+            } else if (voxelMap.has(key)) {
+              scene.remove(voxelMap.get(key)); voxelMap.delete(key);
+            }
+          });
+          document.getElementById('voxel-count').innerText = voxelMap.size;
         }
-        animate();
+      };
+    }
 
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+    function transmitTrajectoryCommand(x, y, z) {
+      if (!ws || ws.readyState !== WebSocket.OPEN || !TrajectoryCommand) return;
 
-        initNetwork();
-    </script>
+      const payloadBuffer = TrajectoryCommand.encode({
+        timestampUs: Date.now() * 1000,
+        commandId: cmdSequenceId++,
+        targetX: x,
+        targetY: y,
+        targetZ: z,
+        targetYaw: 0.0,
+        maxVelocity: 4.5,
+        maxAcceleration: 2.5,
+      }).finish();
+
+      const frame = new ArrayBuffer(4 + payloadBuffer.byteLength);
+      const view = new DataView(frame);
+      view.setUint8(0, 0x5F); view.setUint8(1, 0x01); view.setUint16(2, payloadBuffer.byteLength, false);
+      new Uint8Array(frame, 4).set(payloadBuffer);
+
+      ws.send(frame);
+      setTimeout(() => {
+        if (document.getElementById('action-status').innerText === 'SENDING TARGET ROUTE...') {
+          document.getElementById('action-status').innerText = 'ROUTE TRANSMITTED AND LOCKED';
+        }
+      }, 250);
+    }
+
+    function animate() { requestAnimationFrame(animate); renderer.render(scene, camera); }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    initNetworkStack();
+  </script>
 </body>
 </html>
