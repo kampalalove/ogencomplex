@@ -6,46 +6,128 @@ package ogen.protocol;
 message TrajectoryCommand {
   uint64 timestamp_us = 1;
   uint32 command_id = 2;
-  
+
   double target_x = 3;   // Standard ENU meters
   double target_y = 4;
   double target_z = 5;
   float target_yaw = 6;  // Radians
-  
+
   // v1.0.1 Configuration Overrides
   float max_velocity = 7;     // Optional speed constraint (m/s)
   float max_acceleration = 8; // Optional acceleration constraint (m/s^2)
+
+  // v1.1 Multi-drone routing extensions
+  uint32 vehicle_id = 9;
+  uint32 protocol_minor = 10;
+  string route_channel = 11;
 }
 
 // Type ID: 0x02 - Streamed continuously at 20Hz from Drone to UI
 message TelemetryStream {
   uint64 timestamp_us = 1;
   uint32 flight_status = 2; // Bitmask: [Armed:Bit0 | Offboard:Bit1 | Landed:Bit2]
-  
+
   double pose_x = 3;
   double pose_y = 4;
   double pose_z = 5;
-  
+
   float q_w = 6;
   float q_x = 7;
   float q_y = 8;
   float q_z = 9;
-  
+
   float battery_percentage = 10;
+
+  // v1.1 fleet extensions
+  uint32 vehicle_id = 11;
+  uint32 protocol_minor = 12;
 }
 
 // Type ID: 0x03 - Packed sparse delta-arrays streamed from TSDF Layer to UI
 message VoxelDeltaChunk {
   uint64 timestamp_us = 1;
   uint32 chunk_id = 2;
-  
+
   message VoxelData {
     int64 idx_x = 1;
     int64 idx_y = 2;
     int64 idx_z = 3;
     float tsdf_distance = 4;
     uint32 semantic_class = 5;
+
+    // v1.1 anomaly semantics
+    uint32 anomaly_class = 6;
+    uint32 anomaly_severity = 7;
   }
-  
+
   repeated VoxelData voxels = 3;
+
+  // v1.1 fleet extensions
+  uint32 vehicle_id = 4;
+  uint32 protocol_minor = 5;
+}
+
+// Type ID: 0x04 - Ground Station Mission Command
+message PatrolMissionCommand {
+  enum Action {
+    ACTION_UNSPECIFIED = 0;
+    START_LOOP = 1;
+    DWELL = 2;
+    RESUME = 3;
+    ABORT = 4;
+    RETURN_TO_HOME = 5;
+  }
+
+  message Waypoint {
+    double x = 1;
+    double y = 2;
+    double z = 3;
+    float yaw = 4;
+  }
+
+  uint64 timestamp_us = 1;
+  uint32 mission_id = 2;
+  uint32 vehicle_id = 3;
+  Action action = 4;
+  repeated Waypoint waypoints = 5;
+  uint32 dwell_ms = 6;
+  uint32 timeout_seconds = 7;
+  uint32 protocol_minor = 8;
+}
+
+// Type ID: 0x05 - Bridge Mission State Telemetry
+message MissionStatus {
+  enum MissionState {
+    IDLE = 0;
+    LOOPING = 1;
+    DWELLING = 2;
+    PAUSED = 3;
+    ABORTED = 4;
+    RETURNING_HOME = 5;
+    COMPLETE = 6;
+    FAILSAFE_TIMEOUT = 7;
+  }
+
+  uint64 timestamp_us = 1;
+  uint32 mission_id = 2;
+  uint32 vehicle_id = 3;
+  MissionState mission_state = 4;
+  string mission_reason = 5;
+  uint32 protocol_minor = 6;
+}
+
+// Type ID: 0x06 - Fleet overview snapshot broadcast
+message FleetSnapshot {
+  message Vehicle {
+    uint32 vehicle_id = 1;
+    double pose_x = 2;
+    double pose_y = 3;
+    double pose_z = 4;
+    float battery_percentage = 5;
+    uint32 flight_status = 6;
+  }
+
+  uint64 timestamp_us = 1;
+  repeated Vehicle vehicles = 2;
+  uint32 protocol_minor = 3;
 }

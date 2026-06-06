@@ -1,0 +1,50 @@
+{
+  "trajectory": {
+    "timestamp_us": 1700000000000000,
+    "command_id": 42,
+    "target_x": 12.5,
+    "target_y": -4.2,
+    "target_z": 8.1,
+    "target_yaw": 0.1,
+    "max_velocity": 40,
+    "max_acceleration": 12,
+    "vehicle_id": 3,
+    "protocol_minor": 1,
+    "route_channel": "patrol"
+  },
+  "trajectory_out_of_bounds": {
+    "timestamp_us": 1700000000000000,
+    "command_id": 43,
+    "target_x": 900,
+    "target_y": 0,
+    "target_z": 8,
+    "target_yaw": 0,
+    "max_velocity": 2,
+    "max_acceleration": 1,
+    "vehicle_id": 1,
+    "protocol_minor": 1,
+    "route_channel": "primary"
+  },
+  "voxel_chunk": {
+    "timestamp_us": 1700000001000000,
+    "chunk_id": 7,
+    "vehicle_id": 3,
+    "protocol_minor": 1,
+    "voxels": [
+      { "idx_x": 1, "idx_y": 2, "idx_z": 3, "tsdf_distance": 0.01, "semantic_class": 5, "anomaly_class": 5, "anomaly_severity": 4 },
+      { "idx_x": 2, "idx_y": 2, "idx_z": 3, "tsdf_distance": 0.04, "semantic_class": 9, "anomaly_class": 1, "anomaly_severity": 2 },
+      { "idx_x": 3, "idx_y": 2, "idx_z": 3, "tsdf_distance": 0.02, "semantic_class": 3, "anomaly_class": 99, "anomaly_severity": 99 }
+    ]
+  },
+  "patrol_start": {
+    "mission_id": 100,
+    "vehicle_id": 3,
+    "action": 1,
+    "waypoints": [
+      { "x": 0, "y": 0, "z": 3, "yaw": 0 },
+      { "x": 5, "y": 0, "z": 3, "yaw": 0 }
+    ],
+    "dwell_ms": 2500,
+    "timeout_seconds": 2
+  }
+}
