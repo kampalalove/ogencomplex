@@ -1,12 +1,16 @@
 # FAA Filing-Ready Submission Set
 
 ## Scope
-This package supports OGEN-ASCS-1.1 baseline hardening and OGEN-OPS-1.0 operational controls with proof-first sequencing: invariants, safety gates, deterministic tests, and compliance evidence before UI expansion.
+This package anchors OGEN compliance to a strict five-pillar architecture so that implementation, manifests, and deterministic evidence remain structurally continuous.
 
-## Traceability Chain
-1. **Requirement**: Multi-drone coordination, patrol loops, semantic voxel labeling, staged protocol rollout, local mission templates, and signed audit records.
-2. **Invariant**: Safety bounds, protocol compatibility, mission timeout failsafe, payload schema validation, local-only execution manifest, and tamper-evident mission ledger integrity.
-3. **Proof**: Deterministic fixture-driven tests and generated logs/results bundles for baseline bridge plus OPS controls.
+## Five-Pillar Structural Alignment
+1. **Pillar 1 — Perception & Mapping** (spatial integrity and sensing)
+2. **Pillar 2 — Planning & Motion** (kinodynamic predictability)
+3. **Pillar 3 — Control, Safety & Boundaries** (reflex enforcement)
+4. **Pillar 4 — Tools, Automation & Knowledge** (workspace sovereignty)
+5. **Pillar 5 — Learning, Simulation & Improvement** (iterative validation)
+
+Full ledger: `/tmp/workspace/kampalalove/ogencomplex/docs/master_compliance_ledger.md`
 
 ## Deterministic Evidence Bundle
 - Core inputs: `/tmp/workspace/kampalalove/ogencomplex/tests/evidence/inputs/test_cases.json`
@@ -19,14 +23,14 @@ This package supports OGEN-ASCS-1.1 baseline hardening and OGEN-OPS-1.0 operatio
   - `/tmp/workspace/kampalalove/ogencomplex/tests/evidence/logs/deterministic.log`
   - `/tmp/workspace/kampalalove/ogencomplex/tests/ops_evidence/results.json`
   - `/tmp/workspace/kampalalove/ogencomplex/tests/ops_evidence/logs/deterministic.log`
+  - `/tmp/workspace/kampalalove/ogencomplex/logs/compliance/p4_registry_sign.hash`
+  - `/tmp/workspace/kampalalove/ogencomplex/logs/compliance/p4_validation_report.json`
+
+## Operational Verification
+```bash
+node tools/validate_manifest.js --target compliance
+node tools/parallel_check.js
+```
 
 ## Compliance Matrix
 See `/tmp/workspace/kampalalove/ogencomplex/docs/compliance_matrix.md`.
-
-## Regression Gates
-- Bridge must reject out-of-bounds trajectory payloads.
-- Mission controller must emit `FAILSAFE_TIMEOUT` under timeout injection.
-- Voxel validator must reject or normalize invalid semantic/anomaly fields.
-- OPS manifest validation must enforce simultaneous expansion keys (ASCS/OPS/SIM/AI).
-- OPS audit signatures must fail validation when mission payloads are tampered.
-- All initialization routines must remain local-first and air-gapped.

@@ -15,6 +15,8 @@
     "evidence": "node tests/run_deterministic_evidence.js --write-bundle && node tests/run_ops_deterministic.js --write-bundle",
     "ops": "node ops_cli.js",
     "ogen:validate": "node tools/validate_manifest.js",
-    "ogen:init:expansions": "python3 tools/initialize_expansions.py"
+    "ogen:init:expansions": "python3 tools/initialize_expansions.py",
+    "ogen:validate:compliance": "node tools/validate_manifest.js --target compliance",
+    "ogen:check:compliance": "node tools/parallel_check.js --strict"
   }
 }

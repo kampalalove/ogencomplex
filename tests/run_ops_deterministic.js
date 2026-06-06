@@ -116,6 +116,17 @@ function runDeterministicOpsEvidence() {
     return parsed;
   });
 
+  runCase('manifest_validation_compliance_target', () => {
+    const output = execFileSync('node', ['tools/validate_manifest.js', '--target', 'compliance'], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+    });
+    const parsed = JSON.parse(output);
+    assert.strictEqual(parsed.status, 'ok');
+    assert.strictEqual(parsed.target, expected.compliance_manifest_target);
+    return parsed;
+  });
+
   runCase('initialize_expansions_smoke', () => {
     const output = execFileSync('python3', ['tools/initialize_expansions.py'], {
       cwd: repoRoot,
@@ -132,6 +143,29 @@ function runDeterministicOpsEvidence() {
       ascs: output.includes('[ASCS-2.0]'),
       ai: output.includes('[AI-1.0]'),
     };
+  });
+
+  runCase('parallel_check_repair', () => {
+    const output = execFileSync('node', ['tools/parallel_check.js'], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+    });
+    const parsed = JSON.parse(output);
+    assert.strictEqual(parsed.status, 'ok');
+    assert.strictEqual(parsed.fileCount, expected.compliance_file_count);
+    return parsed;
+  });
+
+  runCase('parallel_check_strict', () => {
+    const output = execFileSync('node', ['tools/parallel_check.js', '--strict'], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+    });
+    const parsed = JSON.parse(output);
+    assert.strictEqual(parsed.status, 'ok');
+    assert.strictEqual(parsed.fileCount, expected.compliance_file_count);
+    assert.strictEqual(parsed.mode, 'strict');
+    return parsed;
   });
 
   const summary = {
