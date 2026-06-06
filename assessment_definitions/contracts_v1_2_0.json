@@ -1,0 +1,14 @@
+{
+  "version": "ogenlaw_contracts_v1.2.0",
+  "agent_type": "contract_formation",
+  "required_facts": [
+    "offer",
+    "acceptance",
+    "consideration",
+    "defenses"
+  ],
+  "rubric": {
+    "valid": "offer and acceptance and consideration > 0 and len(defenses)==0",
+    "review": "missing required facts"
+  }
+}
