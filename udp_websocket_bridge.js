@@ -27,7 +27,7 @@ const MSG_TYPE_PATROL_MISSION_COMMAND = 0x04;
 const MSG_TYPE_MISSION_STATUS = 0x05;
 const MSG_TYPE_FLEET_SNAPSHOT = 0x06;
 
-const protocolProfile = process.env.OGEN_PROTOCOL_PROFILE;
+const protocolProfile = process.env.OGEN_PROTOCOL_PROFILE || 'v1.1';
 const featureFlags = getFeatureFlags(protocolProfile);
 
 const udpSocket = dgram.createSocket('udp4');
