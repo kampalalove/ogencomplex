@@ -1,0 +1,8 @@
+{
+  "template_id": "pipeline_patrol_v1",
+  "vehicle_id": 7,
+  "operator_id": "operator.alpha",
+  "mission_id": "ops-mission-0001",
+  "clock_ms": 1700000000000,
+  "signing_key": "ops-test-key"
+}

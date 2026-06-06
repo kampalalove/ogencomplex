@@ -1,0 +1,26 @@
+{
+  "name": "Pipeline Patrol Loop",
+  "objective": "Inspect mapped pipeline segment with bounded patrol loop",
+  "timeoutSeconds": 180,
+  "dwellMs": 3000,
+  "waypoints": [
+    {
+      "x": 0,
+      "y": 0,
+      "z": 20,
+      "yaw": 0
+    },
+    {
+      "x": 45,
+      "y": -10,
+      "z": 22,
+      "yaw": 15
+    },
+    {
+      "x": 90,
+      "y": 5,
+      "z": 24,
+      "yaw": 25
+    }
+  ]
+}
