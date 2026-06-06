@@ -3,26 +3,71 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>The OGEN Complex</title>
+  <title>The OGEN Complex — Integration Plan</title>
   <style>
     body {
       margin: 0;
       min-height: 100vh;
-      display: grid;
-      place-items: center;
       font-family: Arial, sans-serif;
-      background: #ffffff;
-      color: #000000;
+      background: #f6f8fa;
+      color: #111827;
     }
-    main { text-align: center; }
-    h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
-    p { font-size: 1.2rem; opacity: 0.7; }
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 3rem;
+      line-height: 1.45;
+    }
+    h1 { font-size: 2rem; margin: 0 0 0.5rem 0; }
+    h2 { margin-top: 1.75rem; }
+    p { margin: 0.5rem 0 1rem; }
+    .panel {
+      background: #ffffff;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+    ol, ul { padding-left: 1.2rem; }
+    code {
+      background: #eef2ff;
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+      font-size: 0.95em;
+    }
   </style>
 </head>
 <body>
   <main>
-    <h1>The OGEN Complex</h1>
-    <p>Coming Soon</p>
+    <h1>Hardware-First Integration Plan</h1>
+    <p>
+      This repository does not contain the ROS2 <code>sovereign_mapper</code> package, so ROS2 C++ source changes are not applied here.
+      The plan is captured as an implementation guide for execution in the actual <code>sovereign_mapper</code> workspace.
+    </p>
+
+    <div class="panel">
+      <h2>Execution Order</h2>
+      <ol>
+        <li>Integrate <code>px4_offboard_bridge.cpp</code> first (trajectory output to MAVLink/PX4 setpoints).</li>
+        <li>Add runtime safety gates (arming/mode checks, watchdog timeout, command-rate guarantees).</li>
+        <li>Validate planner-to-PX4 end-to-end timing under load.</li>
+        <li>After control-path stability, add UDP dashboard telemetry pipeline.</li>
+        <li>Tune telemetry schema/rate so visualization never degrades flight-control latency.</li>
+      </ol>
+    </div>
+
+    <div class="panel">
+      <h2><code>px4_offboard_bridge.cpp</code> integration checklist</h2>
+      <ul>
+        <li>Create bridge node subscribing to planner trajectory output and publishing PX4 offboard setpoints.</li>
+        <li>Add strict timestamp freshness checks and reject stale trajectories.</li>
+        <li>Enforce minimum publish rate for offboard mode continuity.</li>
+        <li>Add mode/arming state validation before sending motion setpoints.</li>
+        <li>Implement watchdog fallback to hover/hold if trajectory updates stop.</li>
+        <li>Log command latency metrics for planner output to PX4 ingestion path.</li>
+        <li>Run staged validation: SITL first, then tethered/guarded hardware tests.</li>
+      </ul>
+    </div>
   </main>
 </body>
 </html>
