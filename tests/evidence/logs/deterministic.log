@@ -1,0 +1,4 @@
+[PASS] trajectory_clamp :: {"maxVelocity":12,"maxAcceleration":5,"vehicleId":3}
+[PASS] trajectory_bounds_reject :: {"reason":"safety_bounds"}
+[PASS] semantic_voxel_validation :: {"voxelCount":2,"lastVoxel":{"idxX":3,"idxY":2,"idxZ":3,"tsdfDistance":0.02,"semanticClass":3,"anomalyClass":0,"anomalySeverity":0}}
+[PASS] mission_timeout_failsafe :: {"vehicleId":3,"missionId":100,"missionState":7,"missionReason":"mission_timeout_failsafe","timestampUs":1700000003000000}

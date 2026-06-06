@@ -1,0 +1,107 @@
+{
+  "generatedAt": "2026-06-06T05:52:16.181Z",
+  "deterministicSeed": "OGEN-OPS-1.0",
+  "total": 9,
+  "passed": 9,
+  "failed": 0,
+  "results": [
+    {
+      "name": "ops_template_registry",
+      "pass": true,
+      "details": {
+        "templateCount": 1,
+        "templateId": "pipeline_patrol_v1"
+      }
+    },
+    {
+      "name": "ops_manifest_hash",
+      "pass": true,
+      "details": {
+        "manifestHash": "7fff5578ae078efb775f35bd23b7a5b12da2b1cb2949bebc58daedc6506da446",
+        "templateCount": 1
+      }
+    },
+    {
+      "name": "ops_audit_signature",
+      "pass": true,
+      "details": {
+        "signature": "e8a9287939a41634630a0f620933ce2900592990680fd0ec46649628e1ed441f",
+        "missionId": "ops-mission-0001"
+      }
+    },
+    {
+      "name": "ops_audit_tamper_detect",
+      "pass": true,
+      "details": {
+        "valid": false
+      }
+    },
+    {
+      "name": "manifest_validation_command",
+      "pass": true,
+      "details": {
+        "status": "ok",
+        "target": "runtime",
+        "manifestId": "ogen-core-runtime",
+        "version": "2.0.0-alpha",
+        "expansions": [
+          "ascs_2_0",
+          "ops_1_0",
+          "sim_1_0",
+          "ai_1_0"
+        ]
+      }
+    },
+    {
+      "name": "manifest_validation_compliance_target",
+      "pass": true,
+      "details": {
+        "status": "ok",
+        "target": "compliance",
+        "manifestId": "ogen-core-runtime",
+        "version": "2.0.0-alpha",
+        "expansions": [
+          "ascs_2_0",
+          "ops_1_0",
+          "sim_1_0",
+          "ai_1_0"
+        ]
+      }
+    },
+    {
+      "name": "initialize_expansions_smoke",
+      "pass": true,
+      "details": {
+        "ready": true,
+        "ops": true,
+        "sim": true,
+        "ascs": true,
+        "ai": true
+      }
+    },
+    {
+      "name": "parallel_check_repair",
+      "pass": true,
+      "details": {
+        "status": "ok",
+        "mode": "repair",
+        "validatedAt": "2026-06-06T05:52:16.100Z",
+        "created": 0,
+        "fileCount": 10,
+        "manifestTarget": "compliance"
+      }
+    },
+    {
+      "name": "parallel_check_strict",
+      "pass": true,
+      "details": {
+        "status": "ok",
+        "mode": "strict",
+        "validatedAt": "2026-06-06T05:52:16.173Z",
+        "created": 0,
+        "fileCount": 10,
+        "manifestTarget": "compliance"
+      }
+    }
+  ]
+}

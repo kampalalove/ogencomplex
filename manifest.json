@@ -1,0 +1,40 @@
+{
+  "id": "ogen-core-runtime",
+  "name": "Unified Autonomy Runtime",
+  "version": "2.0.0-alpha",
+  "dependencies": {
+    "depends_on": [
+      "ogen-bridge-protocol"
+    ],
+    "mesh_compatible": true
+  },
+  "expansions": {
+    "ascs_2_0": {
+      "node_type": "distributed_mesh",
+      "broadcast_port": 10001,
+      "max_agents": 5
+    },
+    "ops_1_0": {
+      "audit_log_path": "logs/audit/ops_telemetry.log",
+      "fail_safe_strategy": "deterministic_land"
+    },
+    "sim_1_0": {
+      "hil_mode": true,
+      "synthetic_imu_port": 11001,
+      "synthetic_lidar_port": 11002
+    },
+    "ai_1_0": {
+      "local_model_path": "models/quantized/semantic_vision_onnx/",
+      "compute_provider": "cuda_tensorrt",
+      "confidence_threshold": 0.85
+    }
+  },
+  "execution": {
+    "run_cmd": "python3 src/main.py",
+    "sim_cmd": "python3 sim/virtual_env.py",
+    "env": {
+      "CUDA_VISIBLE_DEVICES": "0",
+      "OGEN_SOVEREIGN_MODE": "1"
+    }
+  }
+}

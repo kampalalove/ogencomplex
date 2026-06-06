@@ -1,0 +1,9 @@
+{
+  "template_count": 1,
+  "template_id": "pipeline_patrol_v1",
+  "manifest_hash": "7fff5578ae078efb775f35bd23b7a5b12da2b1cb2949bebc58daedc6506da446",
+  "audit_signature": "e8a9287939a41634630a0f620933ce2900592990680fd0ec46649628e1ed441f",
+  "tampered_valid": false,
+  "compliance_file_count": 10,
+  "compliance_manifest_target": "compliance"
+}

@@ -1,0 +1,11 @@
+{
+  "clamped_max_velocity": 12,
+  "clamped_max_acceleration": 5,
+  "trajectory_reject_reason": "safety_bounds",
+  "voxel_filtered_count": 2,
+  "voxel_normalized_last_anomaly_class": 0,
+  "voxel_normalized_last_anomaly_severity": 0,
+  "mission_start_state": 1,
+  "mission_timeout_state": 7,
+  "mission_timeout_reason": "mission_timeout_failsafe"
+}

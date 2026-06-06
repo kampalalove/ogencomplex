@@ -1,28 +1,537 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>The OGEN Complex</title>
+  <meta charset="UTF-8">
+  <title>OGEN EDGE // FLEET + PATROL CORE</title>
   <style>
-    body {
-      margin: 0;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      font-family: Arial, sans-serif;
-      background: #ffffff;
-      color: #000000;
+    body { margin: 0; background: #0b0c10; color: #66fcf1; font-family: monospace; overflow: hidden; user-select: none; }
+    #canvas-container { width: 100vw; height: 100vh; position: absolute; z-index: 1; }
+    #ui-overlay {
+      position: absolute; z-index: 2; top: 12px; left: 12px; background: rgba(11,12,16,0.95);
+      padding: 14px; border: 1px solid #1f2833; border-radius: 4px; width: 420px; max-height: calc(100vh - 24px);
+      overflow: auto; box-shadow: 0 0 15px rgba(102,252,241,0.1); pointer-events: auto;
     }
-    main { text-align: center; }
-    h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
-    p { font-size: 1.2rem; opacity: 0.7; }
+    h3,h4 { margin: 8px 0; }
+    .stat-line { margin: 6px 0; border-left: 3px solid #66fcf1; padding-left: 8px; display: flex; justify-content: space-between; }
+    .value { color: #fff; font-weight: bold; }
+    .section { margin-top: 12px; border-top: 1px solid #1f2833; padding-top: 8px; }
+    .row { display: flex; gap: 8px; align-items: center; margin: 6px 0; }
+    .row > * { flex: 1; }
+    select, button, input, textarea {
+      background: #111827; color: #c8fff9; border: 1px solid #1f2833; border-radius: 3px; padding: 6px;
+      font-family: monospace; font-size: 12px;
+    }
+    button { cursor: pointer; }
+    button:hover { border-color: #66fcf1; }
+    textarea { width: 100%; min-height: 68px; resize: vertical; }
+    #fleet-view { max-height: 120px; overflow: auto; border: 1px solid #1f2833; padding: 6px; }
+    #voxel-legend label { display: flex; justify-content: space-between; margin: 3px 0; }
+    .tag { color: #ffbd03; }
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/protobufjs@7.3.0/dist/protobuf.min.js"></script>
 </head>
 <body>
-  <main>
-    <h1>The OGEN Complex</h1>
-    <p>Coming Soon</p>
-  </main>
+  <div id="ui-overlay">
+    <h3>OGEN EDGE // OGEN-ASCS-1.1</h3>
+
+    <div class="stat-line"><span>NETWORK LINK:</span> <span id="link-state" style="color:#ff3838;">DISCONNECTED</span></div>
+    <div class="stat-line"><span>HEARTBEAT RTT:</span> <span id="link-rtt" class="value">-- ms</span></div>
+    <div class="stat-line"><span>SELECTED VEHICLE:</span> <span id="selected-vehicle-label" class="value">0</span></div>
+    <div class="stat-line"><span>ACTIVE MISSION:</span> <span id="mission-state" class="value">IDLE</span></div>
+
+    <div class="section">
+      <h4>Fleet Control</h4>
+      <div class="row">
+        <label for="vehicle-select">Vehicle</label>
+        <select id="vehicle-select"></select>
+      </div>
+      <div class="row">
+        <label><input type="checkbox" id="fleet-overview" checked> Fleet overview</label>
+        <label><input type="checkbox" id="follow-vehicle"> Follow selected</label>
+      </div>
+      <div id="fleet-view"></div>
+    </div>
+
+    <div class="section">
+      <h4>Patrol Mission Authoring</h4>
+      <div class="tag">waypoints: x,y,z,yaw per line</div>
+      <textarea id="mission-waypoints">0,0,3,0
+5,0,3,0
+5,5,3,1.57
+0,5,3,3.14</textarea>
+      <div class="row">
+        <input id="mission-dwell" type="number" min="0" value="3000" placeholder="dwell ms">
+        <input id="mission-timeout" type="number" min="1" value="20" placeholder="timeout s">
+      </div>
+      <div class="row">
+        <button id="mission-start">Start loop</button>
+        <button id="mission-dwell-btn">Dwell</button>
+        <button id="mission-resume">Resume</button>
+      </div>
+      <div class="row">
+        <button id="mission-abort">Abort</button>
+        <button id="mission-rth">Return home</button>
+      </div>
+      <div id="mission-detail" class="tag">Awaiting operator mission command.</div>
+    </div>
+
+    <div class="section">
+      <h4>Semantic Voxel Filters</h4>
+      <div id="voxel-legend"></div>
+      <div class="row">
+        <label for="severity-filter">Min severity</label>
+        <input id="severity-filter" type="range" min="0" max="5" value="0">
+      </div>
+      <div class="stat-line"><span>SPARSE VOXELS:</span> <span id="voxel-count" class="value">0</span></div>
+    </div>
+
+    <div class="section">
+      <div id="action-status" class="tag">LINK ENGINE INITIALIZING...</div>
+    </div>
+  </div>
+
+  <div id="canvas-container"></div>
+
+  <script>
+    const protoSrc = `
+      syntax = "proto3";
+      package ogen.protocol;
+      message TrajectoryCommand {
+        uint64 timestamp_us = 1; uint32 command_id = 2;
+        double target_x = 3; double target_y = 4; double target_z = 5;
+        float target_yaw = 6; float max_velocity = 7; float max_acceleration = 8;
+        uint32 vehicle_id = 9; uint32 protocol_minor = 10; string route_channel = 11;
+      }
+      message TelemetryStream {
+        uint64 timestamp_us = 1; uint32 flight_status = 2;
+        double pose_x = 3; double pose_y = 4; double pose_z = 5;
+        float q_w = 6; float q_x = 7; float q_y = 8; float q_z = 9;
+        float battery_percentage = 10; uint32 vehicle_id = 11; uint32 protocol_minor = 12;
+      }
+      message VoxelDeltaChunk {
+        uint64 timestamp_us = 1; uint32 chunk_id = 2;
+        message VoxelData {
+          int64 idx_x = 1; int64 idx_y = 2; int64 idx_z = 3;
+          float tsdf_distance = 4; uint32 semantic_class = 5;
+          uint32 anomaly_class = 6; uint32 anomaly_severity = 7;
+        }
+        repeated VoxelData voxels = 3;
+        uint32 vehicle_id = 4; uint32 protocol_minor = 5;
+      }
+      message PatrolMissionCommand {
+        enum Action { ACTION_UNSPECIFIED = 0; START_LOOP = 1; DWELL = 2; RESUME = 3; ABORT = 4; RETURN_TO_HOME = 5; }
+        message Waypoint { double x = 1; double y = 2; double z = 3; float yaw = 4; }
+        uint64 timestamp_us = 1; uint32 mission_id = 2; uint32 vehicle_id = 3; Action action = 4;
+        repeated Waypoint waypoints = 5; uint32 dwell_ms = 6; uint32 timeout_seconds = 7; uint32 protocol_minor = 8;
+      }
+      message MissionStatus {
+        enum MissionState { IDLE = 0; LOOPING = 1; DWELLING = 2; PAUSED = 3; ABORTED = 4; RETURNING_HOME = 5; COMPLETE = 6; FAILSAFE_TIMEOUT = 7; }
+        uint64 timestamp_us = 1; uint32 mission_id = 2; uint32 vehicle_id = 3; MissionState mission_state = 4; string mission_reason = 5; uint32 protocol_minor = 6;
+      }
+      message FleetSnapshot {
+        message Vehicle { uint32 vehicle_id = 1; double pose_x = 2; double pose_y = 3; double pose_z = 4; float battery_percentage = 5; uint32 flight_status = 6; }
+        uint64 timestamp_us = 1; repeated Vehicle vehicles = 2; uint32 protocol_minor = 3;
+      }
+    `;
+
+    const parsed = protobuf.parse(protoSrc);
+    const root = parsed.root;
+    const TrajectoryCommand = root.lookupType('ogen.protocol.TrajectoryCommand');
+    const TelemetryStream = root.lookupType('ogen.protocol.TelemetryStream');
+    const VoxelDeltaChunk = root.lookupType('ogen.protocol.VoxelDeltaChunk');
+    const PatrolMissionCommand = root.lookupType('ogen.protocol.PatrolMissionCommand');
+    const MissionStatus = root.lookupType('ogen.protocol.MissionStatus');
+    const FleetSnapshot = root.lookupType('ogen.protocol.FleetSnapshot');
+
+    const MSG_TYPE_COMMAND = 0x01;
+    const MSG_TYPE_TELEMETRY = 0x02;
+    const MSG_TYPE_VOXEL_DELTA = 0x03;
+    const MSG_TYPE_PATROL_MISSION_COMMAND = 0x04;
+    const MSG_TYPE_MISSION_STATUS = 0x05;
+    const MSG_TYPE_FLEET_SNAPSHOT = 0x06;
+
+    const missionStateLabels = ['IDLE', 'LOOPING', 'DWELLING', 'PAUSED', 'ABORTED', 'RETURNING_HOME', 'COMPLETE', 'FAILSAFE_TIMEOUT'];
+    const semanticClasses = [
+      { id: 0, name: 'Unknown', color: 0x1f2833 },
+      { id: 1, name: 'Pipe', color: 0xff3e3e },
+      { id: 2, name: 'Valve', color: 0xffbd03 },
+      { id: 3, name: 'Tank', color: 0x00ff87 },
+      { id: 4, name: 'Crack', color: 0xb45cff },
+      { id: 5, name: 'Leak', color: 0x4ea1ff },
+      { id: 6, name: 'Thermal', color: 0xff7a59 },
+    ];
+
+    const classMaterials = new Map(semanticClasses.map((cls) => [
+      cls.id,
+      new THREE.MeshBasicMaterial({ color: cls.color, transparent: true, opacity: 1 }),
+    ]));
+
+    const classEnabled = new Map(semanticClasses.map((cls) => [cls.id, true]));
+    let minSeverityFilter = 0;
+
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0b0c10);
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1500);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight); container.appendChild(renderer.domElement);
+    scene.add(new THREE.AmbientLight(0x333333));
+    scene.add(new THREE.GridHelper(120, 120, 0x1f2833, 0x1f2833));
+
+    const planeGeo = new THREE.PlaneGeometry(160, 160); planeGeo.rotateX(-Math.PI / 2);
+    const groundPlane = new THREE.Mesh(planeGeo, new THREE.MeshBasicMaterial({ visible: false })); scene.add(groundPlane);
+
+    const voxelSize = 0.2;
+    const voxelGeometry = new THREE.BoxGeometry(voxelSize * 0.95, voxelSize * 0.95, voxelSize * 0.95);
+    const voxelMap = new Map();
+    const droneMap = new Map();
+    const fleetState = new Map();
+
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    let ws;
+    let reconnectInterval = 1000;
+    let cmdSequenceId = 0;
+    let missionSequenceId = 0;
+    let protocolMinor = 0;
+    let selectedVehicleId = 0;
+    let followVehicle = false;
+
+    function getProtoNumber(obj, camelKey, snakeKey) {
+      const value = obj?.[camelKey] ?? obj?.[snakeKey] ?? 0;
+      return Number(value);
+    }
+
+    function createDroneMesh(vehicleId) {
+      const hue = (vehicleId * 47) % 360;
+      const color = new THREE.Color(`hsl(${hue}, 90%, 60%)`);
+      const mesh = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.0, 4), new THREE.MeshBasicMaterial({ color, wireframe: true }));
+      mesh.geometry.rotateX(Math.PI / 2);
+      scene.add(mesh);
+      droneMap.set(vehicleId, mesh);
+      updateVehicleSelect();
+      return mesh;
+    }
+
+    function getDroneMesh(vehicleId) {
+      if (!droneMap.has(vehicleId)) return createDroneMesh(vehicleId);
+      return droneMap.get(vehicleId);
+    }
+
+    function updateVehicleSelect() {
+      const select = document.getElementById('vehicle-select');
+      const ids = Array.from(new Set([0, ...fleetState.keys(), ...droneMap.keys()])).sort((a, b) => a - b);
+      select.innerHTML = ids.map((id) => `<option value="${id}">Vehicle ${id}</option>`).join('');
+      select.value = String(selectedVehicleId);
+      document.getElementById('selected-vehicle-label').innerText = String(selectedVehicleId);
+    }
+
+    function updateFleetOverview(snapshotVehicles) {
+      if (Array.isArray(snapshotVehicles)) {
+        fleetState.clear();
+        snapshotVehicles.forEach((vehicle) => {
+          const vehicleId = getProtoNumber(vehicle, 'vehicleId', 'vehicle_id');
+          fleetState.set(vehicleId, {
+            vehicleId,
+            poseX: getProtoNumber(vehicle, 'poseX', 'pose_x'),
+            poseY: getProtoNumber(vehicle, 'poseY', 'pose_y'),
+            poseZ: getProtoNumber(vehicle, 'poseZ', 'pose_z'),
+            battery: getProtoNumber(vehicle, 'batteryPercentage', 'battery_percentage'),
+            flightStatus: getProtoNumber(vehicle, 'flightStatus', 'flight_status'),
+          });
+        });
+      }
+
+      const lines = Array.from(fleetState.values())
+        .sort((a, b) => a.vehicleId - b.vehicleId)
+        .map((item) => `V${item.vehicleId}  pos(${item.poseX.toFixed(1)}, ${item.poseY.toFixed(1)}, ${item.poseZ.toFixed(1)})  bat:${item.battery.toFixed(0)}%  st:${item.flightStatus}`);
+      document.getElementById('fleet-view').innerText = lines.length ? lines.join('\n') : 'No fleet telemetry yet.';
+      updateVehicleSelect();
+    }
+
+    function buildLegend() {
+      const legend = document.getElementById('voxel-legend');
+      legend.innerHTML = semanticClasses.map((cls) => (
+        `<label><span>${cls.name}</span><input type="checkbox" data-class="${cls.id}" checked></label>`
+      )).join('');
+
+      legend.querySelectorAll('input[type="checkbox"]').forEach((element) => {
+        element.addEventListener('change', () => {
+          const classId = Number(element.dataset.class);
+          classEnabled.set(classId, element.checked);
+          applyVoxelFilters();
+        });
+      });
+    }
+
+    function applyVoxelFilters() {
+      voxelMap.forEach((entry) => {
+        const classOn = classEnabled.get(entry.semanticClass) !== false;
+        const severityOn = entry.anomalySeverity >= minSeverityFilter;
+        entry.mesh.visible = classOn && severityOn;
+        entry.mesh.material.opacity = entry.anomalySeverity >= 3 ? 1 : 0.45;
+      });
+      document.getElementById('voxel-count').innerText = Array.from(voxelMap.values()).filter((entry) => entry.mesh.visible).length;
+    }
+
+    function nextReconnectDelay(baseDelay) {
+      return baseDelay + Math.floor(Math.random() * 250);
+    }
+
+    function sendJson(message) {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify(message));
+      }
+    }
+
+    function setSelectedVehicle(vehicleId) {
+      selectedVehicleId = Math.max(0, Number(vehicleId) || 0);
+      document.getElementById('selected-vehicle-label').innerText = String(selectedVehicleId);
+      sendJson({ type: 'session.selectVehicle', vehicleId: selectedVehicleId });
+      if (followVehicle) sendJson({ type: 'session.followVehicle', vehicleId: selectedVehicleId });
+      updateVehicleSelect();
+    }
+
+    function buildFrame(typeId, payloadBuffer) {
+      const frame = new ArrayBuffer(4 + payloadBuffer.byteLength);
+      const view = new DataView(frame);
+      view.setUint8(0, 0x5F);
+      view.setUint8(1, typeId);
+      view.setUint16(2, payloadBuffer.byteLength, false);
+      new Uint8Array(frame, 4).set(payloadBuffer);
+      return frame;
+    }
+
+    function transmitTrajectoryCommand(x, y, z) {
+      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      const payloadBuffer = TrajectoryCommand.encode({
+        timestampUs: Date.now() * 1000,
+        commandId: cmdSequenceId++,
+        targetX: x,
+        targetY: y,
+        targetZ: z,
+        targetYaw: 0,
+        maxVelocity: 4.5,
+        maxAcceleration: 2.5,
+        vehicleId: selectedVehicleId,
+        protocolMinor,
+        routeChannel: 'primary',
+      }).finish();
+
+      ws.send(buildFrame(MSG_TYPE_COMMAND, payloadBuffer));
+      document.getElementById('action-status').innerText = `COMMAND sent to vehicle ${selectedVehicleId}`;
+    }
+
+    function parseWaypointText() {
+      const rows = document.getElementById('mission-waypoints').value
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+      const waypoints = [];
+      for (const row of rows) {
+        const [xRaw, yRaw, zRaw, yawRaw = '0'] = row.split(',').map((v) => v.trim());
+        const x = Number(xRaw); const y = Number(yRaw); const z = Number(zRaw); const yaw = Number(yawRaw);
+        if (![x, y, z, yaw].every(Number.isFinite)) continue;
+        waypoints.push({ x, y, z, yaw });
+      }
+      return waypoints;
+    }
+
+    function sendMissionCommand(action) {
+      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      const waypoints = parseWaypointText();
+      const dwellMs = Math.max(0, Number(document.getElementById('mission-dwell').value) || 0);
+      const timeoutSeconds = Math.max(1, Number(document.getElementById('mission-timeout').value) || 1);
+
+      const payload = PatrolMissionCommand.encode({
+        timestampUs: Date.now() * 1000,
+        missionId: missionSequenceId,
+        vehicleId: selectedVehicleId,
+        action,
+        waypoints,
+        dwellMs,
+        timeoutSeconds,
+        protocolMinor,
+      }).finish();
+
+      ws.send(buildFrame(MSG_TYPE_PATROL_MISSION_COMMAND, payload));
+      document.getElementById('mission-detail').innerText = `Mission ${missionSequenceId} action=${action} vehicle=${selectedVehicleId}`;
+      if (action === 1) missionSequenceId += 1;
+    }
+
+    function initNetworkStack() {
+      ws = new WebSocket('ws://localhost:8080');
+      ws.binaryType = 'arraybuffer';
+
+      ws.onopen = () => {
+        reconnectInterval = 1000;
+        document.getElementById('link-state').innerText = 'STABLE';
+        document.getElementById('link-state').style.color = '#00ff87';
+        document.getElementById('action-status').innerText = 'AWAITING OPERATOR INPUT';
+        sendJson({ type: 'session.selectVehicle', vehicleId: selectedVehicleId });
+        sendJson({ type: 'session.fleetOverview', enabled: document.getElementById('fleet-overview').checked });
+      };
+
+      ws.onclose = () => {
+        document.getElementById('link-state').innerText = 'DISCONNECTED';
+        document.getElementById('link-state').style.color = '#ff3838';
+        document.getElementById('link-rtt').innerText = '-- ms';
+        document.getElementById('action-status').innerText = `LINK LOSS. RECONNECTING IN ${(reconnectInterval / 1000).toFixed(0)}s...`;
+
+        const delay = nextReconnectDelay(reconnectInterval);
+        setTimeout(() => {
+          reconnectInterval = Math.min(reconnectInterval * 2, 16000);
+          initNetworkStack();
+        }, delay);
+      };
+
+      ws.onmessage = (event) => {
+        if (typeof event.data === 'string') {
+          try {
+            const payload = JSON.parse(event.data);
+            if (payload.type === 'session.state') {
+              protocolMinor = Number(payload.featureFlags?.protocolMinor ?? 0);
+              selectedVehicleId = Number(payload.selectedVehicleId ?? selectedVehicleId);
+              updateVehicleSelect();
+            }
+          } catch {
+            // ignore non-control text
+          }
+          return;
+        }
+
+        const buffer = event.data;
+        const view = new DataView(buffer);
+        if (view.byteLength < 4 || view.getUint8(0) !== 0x5F) return;
+        const payloadLength = view.getUint16(2, false);
+        if (view.byteLength !== 4 + payloadLength) return;
+
+        const typeId = view.getUint8(1);
+        const payload = new Uint8Array(buffer, 4);
+
+        if (typeId === MSG_TYPE_TELEMETRY) {
+          const msg = TelemetryStream.decode(payload);
+          const vehicleId = getProtoNumber(msg, 'vehicleId', 'vehicle_id');
+          const poseX = getProtoNumber(msg, 'poseX', 'pose_x');
+          const poseY = getProtoNumber(msg, 'poseY', 'pose_y');
+          const poseZ = getProtoNumber(msg, 'poseZ', 'pose_z');
+          const qx = getProtoNumber(msg, 'qX', 'q_x');
+          const qy = getProtoNumber(msg, 'qY', 'q_y');
+          const qz = getProtoNumber(msg, 'qZ', 'q_z');
+          const qw = getProtoNumber(msg, 'qW', 'q_w');
+          const battery = getProtoNumber(msg, 'batteryPercentage', 'battery_percentage');
+          const timestampUs = getProtoNumber(msg, 'timestampUs', 'timestamp_us');
+
+          const mesh = getDroneMesh(vehicleId);
+          mesh.position.set(poseX, poseY, poseZ);
+          mesh.quaternion.set(qx, qy, qz, qw);
+
+          fleetState.set(vehicleId, { vehicleId, poseX, poseY, poseZ, battery, flightStatus: getProtoNumber(msg, 'flightStatus', 'flight_status') });
+          updateFleetOverview();
+
+          const lat = (Date.now() * 1000) - timestampUs;
+          if (lat > 0) document.getElementById('link-rtt').innerText = `${(lat / 1000).toFixed(1)} ms`;
+        } else if (typeId === MSG_TYPE_VOXEL_DELTA) {
+          const msg = VoxelDeltaChunk.decode(payload);
+          const vehicleId = getProtoNumber(msg, 'vehicleId', 'vehicle_id');
+
+          (msg.voxels || []).forEach((v) => {
+            const idxX = getProtoNumber(v, 'idxX', 'idx_x');
+            const idxY = getProtoNumber(v, 'idxY', 'idx_y');
+            const idxZ = getProtoNumber(v, 'idxZ', 'idx_z');
+            const tsdfDistance = getProtoNumber(v, 'tsdfDistance', 'tsdf_distance');
+            const semanticClass = Math.floor(getProtoNumber(v, 'semanticClass', 'semantic_class'));
+            const anomalySeverity = Math.floor(getProtoNumber(v, 'anomalySeverity', 'anomaly_severity'));
+
+            if (![idxX, idxY, idxZ, tsdfDistance].every(Number.isFinite)) return;
+            if (semanticClass < 0 || semanticClass > 6) return;
+            if (anomalySeverity < 0 || anomalySeverity > 5) return;
+
+            const key = `${vehicleId}:${idxX},${idxY},${idxZ}`;
+            if (tsdfDistance <= 0.05) {
+              if (!voxelMap.has(key)) {
+                const mesh = new THREE.Mesh(voxelGeometry, classMaterials.get(semanticClass) || classMaterials.get(0));
+                mesh.position.set(idxX * voxelSize, idxY * voxelSize, idxZ * voxelSize);
+                scene.add(mesh);
+                voxelMap.set(key, { mesh, semanticClass, anomalySeverity });
+              } else {
+                const entry = voxelMap.get(key);
+                entry.semanticClass = semanticClass;
+                entry.anomalySeverity = anomalySeverity;
+              }
+            } else if (voxelMap.has(key)) {
+              scene.remove(voxelMap.get(key).mesh);
+              voxelMap.delete(key);
+            }
+          });
+          applyVoxelFilters();
+        } else if (typeId === MSG_TYPE_MISSION_STATUS) {
+          const msg = MissionStatus.decode(payload);
+          const missionState = getProtoNumber(msg, 'missionState', 'mission_state');
+          const missionReason = msg.missionReason || msg.mission_reason || '';
+          document.getElementById('mission-state').innerText = missionStateLabels[missionState] || `STATE_${missionState}`;
+          document.getElementById('mission-detail').innerText = missionReason;
+        } else if (typeId === MSG_TYPE_FLEET_SNAPSHOT) {
+          const snapshot = FleetSnapshot.decode(payload);
+          updateFleetOverview(snapshot.vehicles || []);
+        }
+      };
+    }
+
+    window.addEventListener('click', (event) => {
+      if (event.target.tagName !== 'CANVAS') return;
+      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects([...Array.from(voxelMap.values()).map((entry) => entry.mesh), groundPlane]);
+      if (intersects.length > 0) {
+        const pt = intersects[0].point;
+        transmitTrajectoryCommand(pt.x, pt.y, pt.z);
+      }
+    });
+
+    document.getElementById('vehicle-select').addEventListener('change', (event) => setSelectedVehicle(event.target.value));
+    document.getElementById('fleet-overview').addEventListener('change', (event) => sendJson({ type: 'session.fleetOverview', enabled: event.target.checked }));
+    document.getElementById('follow-vehicle').addEventListener('change', (event) => {
+      followVehicle = event.target.checked;
+      sendJson({ type: 'session.followVehicle', vehicleId: followVehicle ? selectedVehicleId : null });
+    });
+    document.getElementById('severity-filter').addEventListener('input', (event) => {
+      minSeverityFilter = Number(event.target.value || 0);
+      applyVoxelFilters();
+    });
+
+    document.getElementById('mission-start').addEventListener('click', () => sendMissionCommand(1));
+    document.getElementById('mission-dwell-btn').addEventListener('click', () => sendMissionCommand(2));
+    document.getElementById('mission-resume').addEventListener('click', () => sendMissionCommand(3));
+    document.getElementById('mission-abort').addEventListener('click', () => sendMissionCommand(4));
+    document.getElementById('mission-rth').addEventListener('click', () => sendMissionCommand(5));
+
+    function animate() {
+      requestAnimationFrame(animate);
+      if (followVehicle && droneMap.has(selectedVehicleId)) {
+        const target = droneMap.get(selectedVehicleId).position;
+        camera.lookAt(target.x, target.y, target.z);
+      }
+      renderer.render(scene, camera);
+    }
+
+    buildLegend();
+    updateVehicleSelect();
+    initNetworkStack();
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    camera.position.set(0, 18, 28);
+    camera.lookAt(0, 0, 0);
+  </script>
 </body>
 </html>

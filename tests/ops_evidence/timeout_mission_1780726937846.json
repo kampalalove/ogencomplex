@@ -1,0 +1,11 @@
+{
+  "mission_id": "mission_1780726937846",
+  "timeoutSeconds": 2,
+  "gracePeriod": 0,
+  "start_time": 0,
+  "deadline": 2,
+  "trigger_time": 2,
+  "final_state": "FAILSAFE_TIMEOUT",
+  "reason": "mission_timeout_failsafe",
+  "template": "Pipeline Patrol Loop"
+}

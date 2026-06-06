@@ -1,0 +1,53 @@
+{
+  "generatedAt": "2026-06-06T05:52:15.897Z",
+  "deterministicSeed": "OGEN-ASCS-1.1",
+  "profile": "v1.1",
+  "total": 4,
+  "passed": 4,
+  "failed": 0,
+  "results": [
+    {
+      "name": "trajectory_clamp",
+      "pass": true,
+      "details": {
+        "maxVelocity": 12,
+        "maxAcceleration": 5,
+        "vehicleId": 3
+      }
+    },
+    {
+      "name": "trajectory_bounds_reject",
+      "pass": true,
+      "details": {
+        "reason": "safety_bounds"
+      }
+    },
+    {
+      "name": "semantic_voxel_validation",
+      "pass": true,
+      "details": {
+        "voxelCount": 2,
+        "lastVoxel": {
+          "idxX": 3,
+          "idxY": 2,
+          "idxZ": 3,
+          "tsdfDistance": 0.02,
+          "semanticClass": 3,
+          "anomalyClass": 0,
+          "anomalySeverity": 0
+        }
+      }
+    },
+    {
+      "name": "mission_timeout_failsafe",
+      "pass": true,
+      "details": {
+        "vehicleId": 3,
+        "missionId": 100,
+        "missionState": 7,
+        "missionReason": "mission_timeout_failsafe",
+        "timestampUs": 1700000003000000
+      }
+    }
+  ]
+}
