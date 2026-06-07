@@ -9,6 +9,8 @@ jobs:
   test-verifier:
     name: Public verifier test suite
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 

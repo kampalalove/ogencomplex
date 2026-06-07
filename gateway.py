@@ -141,7 +141,10 @@ def _build_trust_receipt(evidence_bytes: bytes, result: PipelineResult) -> dict:
         "evidence_hash": evidence_hash,
         "attested_at":   datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "merkle_root":   merkle_root,
-        "rekor_log_id":  str(uuid.uuid4()),  # TODO: submit to Rekor in production
+        # TODO(production): submit to Rekor and store the returned log entry UUID here.
+        # Until then this field contains a placeholder UUID; the public verifier will
+        # issue a WARN if Rekor is unreachable but will not block offline audits.
+        "rekor_log_id":  str(uuid.uuid4()),
         "pcr0":          pcr0,
     }
 
