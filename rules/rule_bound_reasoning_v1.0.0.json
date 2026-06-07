@@ -1,0 +1,44 @@
+{
+  "version": "1.0.0",
+  "name": "rule_bound_reasoning_v1.0.0",
+  "description": "Compliance rules for the OGEN Complex audit-first pipeline.",
+  "rules": [
+    {
+      "id": "R001",
+      "name": "cross_border_gdpr",
+      "description": "Cross-border EU transfers require a statutory hash.",
+      "condition": {
+        "all": [
+          {"fact": "input_metadata.cross_border", "op": "eq", "value": true},
+          {"fact": "input_metadata.origin_country", "op": "eq", "value": "EU_MEMBER"}
+        ]
+      },
+      "require": {"fact": "parsed_clauses.statutory_hash_present", "op": "eq", "value": true},
+      "fail_verdict": "FAIL_R001_STATUTORY_HASH_MISSING"
+    },
+    {
+      "id": "R002",
+      "name": "liability_cap_floor",
+      "description": "Liability cap must be at least $1,000,000 USD.",
+      "condition": {
+        "all": [
+          {"fact": "parsed_clauses.has_liability_cap", "op": "eq", "value": true}
+        ]
+      },
+      "require": {"fact": "parsed_clauses.liability_limit_usd", "op": "gte", "value": 1000000},
+      "fail_verdict": "FAIL_R002_LIABILITY_CAP_TOO_LOW"
+    },
+    {
+      "id": "R003",
+      "name": "state_machine_transition_allowed",
+      "description": "Only transitions registered in the DAG are permitted.",
+      "condition": {
+        "all": [
+          {"fact": "transition.from_state", "op": "exists", "value": null}
+        ]
+      },
+      "require": {"fact": "transition.allowed", "op": "eq", "value": true},
+      "fail_verdict": "FAIL_R003_ILLEGAL_TRANSITION"
+    }
+  ]
+}
