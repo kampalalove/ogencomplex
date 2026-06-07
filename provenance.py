@@ -153,4 +153,6 @@ def add_provenance_to_response(
         "watermark_detected": None,
     }
     original_response["provenance"] = provenance
+    # Note: canonical_proof captures the response *before* the provenance block
+    # is attached — this is intentional; it commits the payload, not the wrapper.
     return original_response

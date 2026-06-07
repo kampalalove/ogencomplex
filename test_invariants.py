@@ -376,17 +376,18 @@ def test_major4_tampered_chain_fails():
 # Major 16 — lineage_trace (provenance.py)
 # ===========================================================================
 
-def test_major16_lineage_returns_sha256_prefix():
-    """Major 16 — lineage_trace returns a sha256: prefixed digest."""
+def test_major16_lineage_format():
+    """Major 16 — lineage_trace returns a sha256:-prefixed 64-hex-char digest."""
     h = lineage_trace("dataset_01", [{"step": "ingest"}])
     assert h.startswith("sha256:")
     assert len(h) == len("sha256:") + 64
 
 
-def test_major16_lineage_determinism_within_call():
-    """Major 16 — same inputs produce structurally consistent output (sha256 format)."""
-    h1 = lineage_trace("ds", [])
-    assert h1.startswith("sha256:")
+def test_major16_lineage_different_inputs_differ():
+    """Major 16 — different dataset_ids produce different hashes."""
+    h1 = lineage_trace("ds_alpha", [])
+    h2 = lineage_trace("ds_beta",  [])
+    assert h1 != h2
 
 
 # ===========================================================================

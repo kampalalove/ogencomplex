@@ -181,7 +181,8 @@ async def verify_provenance(
         rationale="provenance_verify",
     )
 
-    last_entry = ledger.export_ledger()[-1] if ledger.entries else None
+    exported = ledger.export_ledger()
+    last_entry = exported[-1] if exported else None
 
     return {
         "watermark_present": watermark is not None,
