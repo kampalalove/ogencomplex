@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  core-rail:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      # Override with real keys in production (never commit secrets).
+      # Format: key:tier:rpm_limit,key2:tier2:rpm_limit2
+      - API_KEYS=sk_enterprise_123:enterprise:100000,sk_free_456:free:10
+    volumes:
+      - ./rules:/app/rules
+      - ledger-data:/app/ledger
+
+volumes:
+  ledger-data:
