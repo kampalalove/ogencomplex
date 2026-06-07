@@ -52,6 +52,7 @@ import argparse
 import csv
 import hashlib
 import json
+import os
 import sys
 import urllib.error
 import urllib.request
@@ -68,12 +69,21 @@ from cryptography.hazmat.primitives.asymmetric import padding
 # Each string is a PEM-encoded RSA public key.  When non-empty every receipt
 # must embed one of these keys; otherwise any well-formed key is accepted
 # (development / test mode).
+#
+# Override at deploy time (no source edit required):
+#   export SKYLARS_PUBKEY_PEM="$(cat skylars_public.pem)"
 SKYLARS_PUBKEYS: list[str] = []
+_env_pubkey = os.environ.get("SKYLARS_PUBKEY_PEM", "").strip()
+if _env_pubkey:
+    SKYLARS_PUBKEYS = [_env_pubkey]
 
 # Nitro Enclave PCR0 pinned measurement (SHA-384 hex, 96 chars).
 # Set to the real measurement from `aws nitro-enclaves-cli describe-enclave`.
 # The all-zeros placeholder activates warning-only mode.
-PINNED_PCR0: str = "0" * 96
+#
+# Override at deploy time (no source edit required):
+#   export PINNED_PCR0="<96-char hex from describe-enclave>"
+PINNED_PCR0: str = os.environ.get("PINNED_PCR0", "0" * 96)
 
 REKOR_BASE_URL: str = "https://rekor.sigstore.dev"
 

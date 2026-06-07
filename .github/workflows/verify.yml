@@ -1,0 +1,26 @@
+name: Verify
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  test-verifier:
+    name: Public verifier test suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run public verifier tests (60 tests — CI breaks on regression)
+        run: python -m pytest test_public_verifier.py -v
+
+      - name: Run pipeline invariant tests
+        run: python -m pytest test_invariants.py -v
