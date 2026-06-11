@@ -51,6 +51,10 @@ echo "🗄️  Applying D1 schema..."
 npx wrangler d1 execute veritas_kb --file=schema.sql
 echo "📜 Seeding Veritas rules..."
 npx wrangler d1 execute veritas_kb --file=more_rules.sql
+if [ -f "more_rules_extra.sql" ]; then
+    echo "📜 Seeding extra Veritas rules..."
+    npx wrangler d1 execute veritas_kb --file=more_rules_extra.sql
+fi
 
 # 3. Create R2 bucket (ignore already-exists failures)
 echo "🪣 Ensuring R2 bucket exists..."
@@ -77,80 +81,13 @@ if [ -z "$WORKER_URL" ]; then
 fi
 cd ..
 
-# 6. Create frontend with dynamic Worker URL and API key UX
-mkdir -p public
-cat > public/index.html << EOF
-<!DOCTYPE html>
-<html>
-<head><title>Veritas Engine</title><style>body{font-family:system-ui;margin:2rem;max-width:900px}label{display:block;margin:.5rem 0}input{margin-left:.5rem}a{color:#2563eb}pre{background:#f8fafc;padding:1rem;overflow:auto}</style></head>
-<body>
-<h1>⚖️ Veritas Engine</h1>
-<label>API Key: <input id="apiKey" type="password" style="min-width:24rem" placeholder="Paste API key"></label>
-<button id="saveKey">Save API Key Locally</button>
-<h2>Inputs</h2>
-<div id="form"></div>
-<button id="advise">Get Advice</button>
-<button id="loadRules">Load Active Rules</button>
-<pre id="output"></pre>
-<script>
-const WORKER_URL = "$WORKER_URL";
-const keyInput = document.getElementById("apiKey");
-keyInput.value = localStorage.getItem("veritas_api_key") || "";
-document.getElementById("saveKey").onclick = () => {
-  localStorage.setItem("veritas_api_key", keyInput.value.trim());
-  document.getElementById("output").innerText = "API key saved in this browser.";
-};
-function authHeaders() {
-  return { "Content-Type": "application/json", "X-API-Key": keyInput.value.trim() };
-}
-async function loadFields() {
-  const res = await fetch(WORKER_URL + "/rule_fields");
-  const { fields } = await res.json();
-  const form = document.getElementById("form");
-  form.innerHTML = "";
-  fields.forEach(f => {
-    const label = document.createElement("label");
-    label.innerText = f + ": ";
-    const input = document.createElement("input");
-    input.name = f;
-    input.type = f === "fire_detected" ? "text" : "number";
-    label.appendChild(input);
-    form.appendChild(label);
-  });
-}
-document.getElementById("advise").onclick = async () => {
-  const inputs = Object.fromEntries([...document.querySelectorAll("#form input")].map(i => [i.name, i.value]));
-  const res = await fetch(WORKER_URL + "/advise", {
-    method: "POST",
-    body: JSON.stringify(inputs),
-    headers: authHeaders()
-  });
-  const data = await res.json();
-  renderAdvice(data);
-};
-document.getElementById("loadRules").onclick = async () => {
-  const res = await fetch(WORKER_URL + "/rules", { headers: { "X-API-Key": keyInput.value.trim() } });
-  const data = await res.json();
-  document.getElementById("output").innerText = JSON.stringify(data, null, 2);
-};
-function renderAdvice(data) {
-  const lines = (data.matches || []).map(m => {
-    const link = m.evidence_url ? "\\nEvidence: " + m.evidence_url : "";
-    return "[" + m.priority + "] " + m.rule + " - " + m.action + link;
-  });
-  document.getElementById("output").innerText = lines.length ? lines.join("\\n\\n") : JSON.stringify(data, null, 2);
-}
-loadFields().catch(error => {
-  document.getElementById("output").innerText = "Failed to load fields: " + error.message;
-});
-</script>
-</body>
-</html>
-EOF
-
-# 7. Deploy Pages
+# 6. Deploy Pages frontend
+if [ ! -f "frontend/index.html" ]; then
+    echo "❌ FATAL: frontend/index.html is missing."
+    exit 1
+fi
 echo "📄 Deploying frontend..."
-PAGES_OUTPUT=$(npx wrangler pages deploy public --project-name veritas-ui 2>&1)
+PAGES_OUTPUT=$(npx wrangler pages deploy frontend --project-name veritas-ui 2>&1)
 echo "$PAGES_OUTPUT"
 PAGES_URL=$(echo "$PAGES_OUTPUT" | grep -oE 'https://[^[:space:]]+pages\.dev' | head -1 || true)
 if [ -z "$PAGES_URL" ]; then

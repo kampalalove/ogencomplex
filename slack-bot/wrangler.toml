@@ -3,7 +3,7 @@ main = "src/index.ts"
 compatibility_date = "2025-06-11"
 
 [vars]
-VERITAS_WORKER_URL = "https://veritas-engine.your-subdomain.workers.dev"
+VERITAS_WORKER_URL = "https://veritas-worker.ogen-veritas.workers.dev"
 
 # Set before deploy:
 # npx wrangler secret put API_KEY

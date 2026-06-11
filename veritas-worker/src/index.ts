@@ -76,7 +76,9 @@ export default {
         const evidenceKey = typeof row.evidence_source === "string" ? row.evidence_source : "";
         const match: Record<string, unknown> = {
           rule: row.rule_name,
+          rule_name: row.rule_name,
           action: row.action_text,
+          action_text: row.action_text,
           priority: row.priority,
           category: row.category,
           evidence: evidenceKey,

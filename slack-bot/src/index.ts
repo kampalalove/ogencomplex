@@ -6,7 +6,8 @@ export interface Env {
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    if (request.method !== "POST") {
+    const url = new URL(request.url);
+    if (request.method !== "POST" || url.pathname !== "/") {
       return new Response("Not Found", { status: 404 });
     }
 
@@ -18,6 +19,7 @@ export default {
     const form = new URLSearchParams(rawBody);
     const command = form.get("command") || "/veritas";
     const text = form.get("text") || "";
+    const responseUrl = form.get("response_url") || "";
     const payload = parseKeyValuePairs(text);
 
     if (Object.keys(payload).length === 0) {
@@ -37,14 +39,14 @@ export default {
     });
 
     if (!adviseResp.ok) {
-      return Response.json({
+      return slackResponse(responseUrl, {
         response_type: "ephemeral",
         text: `Veritas request failed: ${adviseResp.status} ${await adviseResp.text()}`,
       });
     }
 
     const advice = await adviseResp.json<{ matches?: VeritasMatch[] }>();
-    return Response.json({
+    return slackResponse(responseUrl, {
       response_type: "in_channel",
       text: formatSlackResponse(advice.matches || []),
     });
@@ -53,21 +55,25 @@ export default {
 
 interface VeritasMatch {
   rule?: string;
+  rule_name?: string;
   action?: string;
+  action_text?: string;
   evidence?: string;
   evidence_url?: string;
   priority?: string;
   category?: string;
 }
 
-function parseKeyValuePairs(text: string): Record<string, string | number> {
-  const payload: Record<string, string | number> = {};
+function parseKeyValuePairs(text: string): Record<string, string | number | boolean> {
+  const payload: Record<string, string | number | boolean> = {};
   for (const token of text.match(/(?:[^\s"]+|"[^"]*")+/g) || []) {
     const [rawKey, ...valueParts] = token.split("=");
     if (!rawKey || valueParts.length === 0) continue;
     const rawValue = valueParts.join("=").replace(/^"|"$/g, "");
     const numeric = Number(rawValue);
-    payload[rawKey] = rawValue.trim() !== "" && !Number.isNaN(numeric) ? numeric : rawValue;
+    if (rawValue === "true") payload[rawKey] = true;
+    else if (rawValue === "false") payload[rawKey] = false;
+    else payload[rawKey] = rawValue.trim() !== "" && !Number.isNaN(numeric) ? numeric : rawValue;
   }
   return payload;
 }
@@ -79,9 +85,24 @@ function formatSlackResponse(matches: VeritasMatch[]): string {
 
   return matches.map(match => {
     const priority = String(match.priority || "medium").toUpperCase();
+    const rule = match.rule_name || match.rule || "rule";
+    const action = match.action_text || match.action || "No action provided.";
     const evidence = match.evidence_url ? `\nEvidence: ${match.evidence_url}` : "";
-    return `*${priority}* ${match.rule || "rule"}\n${match.action || "No action provided."}${evidence}`;
+    return `*${priority}* ${rule}\n${action}${evidence}`;
   }).join("\n\n");
+}
+
+function slackResponse(responseUrl: string, body: Record<string, unknown>): Response {
+  if (responseUrl) {
+    fetch(responseUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }).catch(error => console.error("Slack response_url failed", error));
+    return new Response("Looking up advice...", { status: 200 });
+  }
+
+  return Response.json(body);
 }
 
 async function verifySlackSignature(request: Request, rawBody: string, secret: string): Promise<boolean> {
