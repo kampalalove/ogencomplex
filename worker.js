@@ -1,5 +1,5 @@
 // ========================
-// OGEN U - Cloudflare Worker (v1.2 with deterministic Judge)
+// OGEN U - Cloudflare Worker (v1.2)
 // Routes: /, /campus, /verify, /cdn/*, /api/deploy, /api/rollback
 // ========================
 
@@ -30,14 +30,14 @@ export default {
       const map = {
         'sw.js': { data: SW_JS, type: 'application/javascript; charset=utf-8' },
         'manifest.json': { data: MANIFEST_JSON, type: 'application/json; charset=utf-8' },
-        'icon-192.png': { data: ICON_192, type: 'image/png', encoding: 'base64' },
-        'icon-512.png': { data: ICON_512, type: 'image/png', encoding: 'base64' },
+        'icon-192.png': { data: ICON_192_B64, type: 'image/png', encoding: 'base64' },
+        'icon-512.png': { data: ICON_512_B64, type: 'image/png', encoding: 'base64' },
         'curricula/HYDRO_L1_EN.json': { data: HYDRO_JSON, type: 'application/json; charset=utf-8' },
       };
 
       if (map[asset]) {
         const { data, type, encoding } = map[asset];
-        const body = encoding === 'base64' ? base64ToBytes(data) : data;
+        const body = encoding === 'base64' ? Uint8Array.from(atob(data), c => c.charCodeAt(0)) : data;
         return new Response(body, {
           headers: {
             'Content-Type': type,
@@ -168,10 +168,10 @@ const HYDRO_JSON = JSON.stringify({
 });
 
 // 1x1 transparent PNG base64
-const ICON_192 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
-const ICON_512 = ICON_192;
+const ICON_192_B64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+const ICON_512_B64 = ICON_192_B64;
 
-// ========== CAMPUS HTML with deterministic Judge (WebLLM) ==========
+// ========== CAMPUS HTML with deterministic onboarding + WebLLM judge ==========
 const CAMPUS_HTML = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -651,15 +651,6 @@ function jsonResponse(body, init = {}) {
       ...(init.headers || {}),
     },
   });
-}
-
-function base64ToBytes(value) {
-  const binary = atob(value);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i += 1) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes;
 }
 
 // Helper

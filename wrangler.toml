@@ -7,4 +7,4 @@ kv_namespaces = [
 ]
 
 [vars]
-DEPLOY_SECRET = "replace-with-a-long-random-secret"
+DEPLOY_SECRET = "replace-with-a-strong-random-secret"
