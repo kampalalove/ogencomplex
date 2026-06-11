@@ -32,6 +32,7 @@ export default {
         'manifest.json': { data: MANIFEST_JSON, type: 'application/json; charset=utf-8' },
         'icon-192.png': { data: ICON_192_B64, type: 'image/png', encoding: 'base64' },
         'icon-512.png': { data: ICON_512_B64, type: 'image/png', encoding: 'base64' },
+        'curricula/FUSION_ENERGY_SOVEREIGNTY_100.json': { data: FUSION_SYLLABUS_JSON, type: 'application/json; charset=utf-8' },
         'curricula/HYDRO_L1_EN.json': { data: HYDRO_JSON, type: 'application/json; charset=utf-8' },
       };
 
@@ -129,9 +130,10 @@ const VERIFY_HTML = `<!DOCTYPE html>
           break;
         }
         state.lastHash = e.hash;
-        if (e.type === 'probe' && e.step === 'SEDIMENTATION' && e.choice === 'A') state.scores.gravity = (state.scores.gravity || 0) + 2;
-        if (e.type === 'probe' && e.step === 'PATHOGEN' && e.choice === 'A') state.scores.pathogen = (state.scores.pathogen || 0) + 2;
-        if (e.type === 'final') state.track = (state.scores.pathogen >= 2) ? 'Hydro-Biofilter' : 'Hydro-Observation';
+        if (e.type === 'probe' && e.step === 'ENERGY_SOVEREIGNTY' && e.choice === 'A') state.scores.sovereignty = (state.scores.sovereignty || 0) + 2;
+        if (e.type === 'probe' && e.step === 'FUSION_FOUNDATIONS' && e.choice === 'A') state.scores.fusion = (state.scores.fusion || 0) + 2;
+        if (e.type === 'probe' && e.step === 'GRID_DEPLOYMENT' && e.choice === 'A') state.scores.deployment = (state.scores.deployment || 0) + 2;
+        if (e.type === 'final') state.track = (state.scores.fusion >= 2 && state.scores.deployment >= 2) ? 'Fusion & Energy Sovereignty' : 'Energy Sovereignty Foundations';
       }
       let out = state.corrupted ? '❌ Ledger corrupted' : '✅ Valid. Track: ' + state.track + '\\nScores: ' + JSON.stringify(state.scores);
       document.getElementById('output').innerText = out;
@@ -158,6 +160,117 @@ const MANIFEST_JSON = JSON.stringify({
     { src: '/cdn/icon-512.png', sizes: '512x512', type: 'image/png' },
   ],
 });
+
+const FUSION_SYLLABUS = {
+  presetId: 'fusion_energy_sovereignty_100',
+  title: 'Fusion & Energy Sovereignty: 100-Query Foundational Syllabus',
+  version: 1,
+  seed: 42,
+  queries: [
+    { id: 'Q001', prompt: "Define 'energy sovereignty' in one sentence.", tags: ['foundations', 'definition'] },
+    { id: 'Q002', prompt: 'List three historical energy transitions (e.g., biomass -> coal -> oil).', tags: ['history'] },
+    { id: 'Q003', prompt: 'Explain why centralized grids create political leverage.', tags: ['politics', 'grid'] },
+    { id: 'Q004', prompt: 'Compare baseload vs. variable generation in one paragraph.', tags: ['grid', 'engineering'] },
+    { id: 'Q005', prompt: 'Describe the difference between fission and fusion in under 150 words.', tags: ['nuclear', 'foundations'] },
+    { id: 'Q006', prompt: 'What is the Lawson criterion and why does it matter?', tags: ['fusion', 'physics'] },
+    { id: 'Q007', prompt: 'Summarize the role of confinement in fusion (magnetic vs. inertial).', tags: ['fusion', 'confinement'] },
+    { id: 'Q008', prompt: "Explain 'Q > 1' in fusion and its practical meaning.", tags: ['fusion', 'metrics'] },
+    { id: 'Q009', prompt: 'List three major fusion approaches (tokamak, stellarator, laser ICF, etc.).', tags: ['fusion', 'taxonomy'] },
+    { id: 'Q010', prompt: 'Describe a tokamak in terms of geometry and field configuration.', tags: ['fusion', 'tokamak'] },
+    { id: 'Q011', prompt: 'Explain what plasma is and how it differs from gas.', tags: ['plasma', 'foundations'] },
+    { id: 'Q012', prompt: "Define 'plasma beta' and why engineers care about it.", tags: ['plasma', 'engineering'] },
+    { id: 'Q013', prompt: 'List three key plasma instabilities relevant to fusion devices.', tags: ['plasma', 'instabilities'] },
+    { id: 'Q014', prompt: 'Explain the role of superconducting magnets in modern fusion designs.', tags: ['hardware', 'magnets'] },
+    { id: 'Q015', prompt: 'Compare high-temperature superconductors vs. conventional superconductors for fusion.', tags: ['materials', 'magnets'] },
+    { id: 'Q016', prompt: "Describe the concept of a 'blanket' in fusion reactors.", tags: ['fusion', 'engineering'] },
+    { id: 'Q017', prompt: 'Explain tritium breeding and why it is a bottleneck.', tags: ['fuel', 'tritium'] },
+    { id: 'Q018', prompt: 'List the main fuel cycles (D-T, D-D, D-He3, p-B11) and one tradeoff each.', tags: ['fuel', 'tradeoffs'] },
+    { id: 'Q019', prompt: 'Describe neutron flux and its impact on materials and shielding.', tags: ['neutrons', 'materials'] },
+    { id: 'Q020', prompt: 'Explain how fusion heat is converted to electricity in a typical plant design.', tags: ['systems', 'conversion'] },
+    { id: 'Q021', prompt: 'Sketch the high-level architecture of a fusion power plant (blocks + flows).', tags: ['systems', 'architecture'] },
+    { id: 'Q022', prompt: 'Define capacity factor and estimate realistic ranges for fusion.', tags: ['metrics', 'capacity_factor'] },
+    { id: 'Q023', prompt: 'Compare fusion to solar PV on land use, intermittency, and grid integration.', tags: ['comparison', 'solar'] },
+    { id: 'Q024', prompt: 'Compare fusion to fission on waste, safety, and proliferation risk.', tags: ['comparison', 'fission'] },
+    { id: 'Q025', prompt: 'Explain why time-to-deployment matters more than theoretical efficiency.', tags: ['strategy', 'deployment'] },
+    { id: 'Q026', prompt: 'List three non-technical bottlenecks to fusion deployment.', tags: ['policy', 'bottlenecks'] },
+    { id: 'Q027', prompt: 'Describe the typical regulatory path for a new nuclear technology.', tags: ['regulation', 'nuclear'] },
+    { id: 'Q028', prompt: 'Explain how public perception shapes nuclear and fusion policy.', tags: ['society', 'perception'] },
+    { id: 'Q029', prompt: "Define 'social license to operate' in the context of energy projects.", tags: ['policy', 'social_license'] },
+    { id: 'Q030', prompt: 'Design a one-sentence narrative that makes fusion emotionally legible to non-experts.', tags: ['communication', 'narrative'] },
+    { id: 'Q031', prompt: 'Explain grid inertia and why high-renewables grids struggle with it.', tags: ['grid', 'inertia'] },
+    { id: 'Q032', prompt: 'Describe how fusion could act as synthetic inertia or firm capacity.', tags: ['fusion', 'grid'] },
+    { id: 'Q033', prompt: "List three grid services beyond 'energy' that matter (e.g., frequency regulation).", tags: ['grid', 'services'] },
+    { id: 'Q034', prompt: 'Explain the difference between transmission and distribution networks.', tags: ['grid', 'structure'] },
+    { id: 'Q035', prompt: 'Describe one scenario where fusion is deployed off-grid (e.g., remote industry).', tags: ['deployment', 'offgrid'] },
+    { id: 'Q036', prompt: "Define 'microgrid' and how fusion could integrate into one.", tags: ['microgrid', 'integration'] },
+    { id: 'Q037', prompt: 'Explain why energy storage is still relevant in a fusion-heavy grid.', tags: ['storage', 'fusion'] },
+    { id: 'Q038', prompt: 'Compare batteries vs. thermal storage for coupling with fusion.', tags: ['storage', 'comparison'] },
+    { id: 'Q039', prompt: 'Describe a fusion + desalination co-located plant concept.', tags: ['co-benefits', 'water'] },
+    { id: 'Q040', prompt: 'Describe a fusion + hydrogen production co-located plant concept.', tags: ['co-benefits', 'hydrogen'] },
+    { id: 'Q041', prompt: 'Explain levelized cost of energy (LCOE) and its limitations.', tags: ['economics', 'LCOE'] },
+    { id: 'Q042', prompt: 'List three cost drivers specific to fusion plants.', tags: ['economics', 'fusion_costs'] },
+    { id: 'Q043', prompt: "Describe how learning curves (Wright's law) might apply to fusion.", tags: ['economics', 'learning_curve'] },
+    { id: 'Q044', prompt: 'Explain why modularity matters for cost reduction.', tags: ['design', 'modularity'] },
+    { id: 'Q045', prompt: 'Sketch a modular fusion plant product line (S, M, L) and target markets.', tags: ['product', 'markets'] },
+    { id: 'Q046', prompt: "Define 'balance of plant' and list its main components.", tags: ['systems', 'BoP'] },
+    { id: 'Q047', prompt: 'Explain how financing structures (PPAs, project finance) affect deployment speed.', tags: ['finance', 'deployment'] },
+    { id: 'Q048', prompt: 'Describe one fusion business model that prioritizes sovereignty over profit.', tags: ['business_model', 'sovereignty'] },
+    { id: 'Q049', prompt: 'List three metrics a sovereign energy ministry should track for fusion rollout.', tags: ['governance', 'metrics'] },
+    { id: 'Q050', prompt: 'Design a simple dashboard for national fusion deployment status.', tags: ['governance', 'dashboard'] },
+    { id: 'Q051', prompt: 'Explain how supply chains for magnets and vacuum systems can become chokepoints.', tags: ['supply_chain', 'hardware'] },
+    { id: 'Q052', prompt: 'List three critical materials for fusion and their geopolitical risks.', tags: ['materials', 'geopolitics'] },
+    { id: 'Q053', prompt: 'Describe strategies for localizing fusion component manufacturing.', tags: ['industrial_policy', 'localization'] },
+    { id: 'Q054', prompt: 'Explain how export controls could affect fusion technology sharing.', tags: ['policy', 'export_controls'] },
+    { id: 'Q055', prompt: 'Design a bilateral fusion cooperation agreement in three bullet points.', tags: ['diplomacy', 'cooperation'] },
+    { id: 'Q056', prompt: "Describe how fusion could reshape petrostates' economic models.", tags: ['geopolitics', 'petrostates'] },
+    { id: 'Q057', prompt: "Explain the concept of 'energy weaponization' with one historical example.", tags: ['geopolitics', 'history'] },
+    { id: 'Q058', prompt: 'Describe how fusion could reduce energy weaponization globally.', tags: ['geopolitics', 'fusion_impact'] },
+    { id: 'Q059', prompt: 'List three risks of fusion being captured by incumbents.', tags: ['risk', 'incumbents'] },
+    { id: 'Q060', prompt: 'Propose one governance mechanism to keep fusion aligned with public interest.', tags: ['governance', 'mechanisms'] },
+    { id: 'Q061', prompt: 'Explain why measurement and verification are central to energy policy.', tags: ['M&V', 'policy'] },
+    { id: 'Q062', prompt: 'Describe how an IPFS-backed ledger could store plant performance data.', tags: ['ledger', 'IPFS'] },
+    { id: 'Q063', prompt: 'Design a minimal schema for recording fusion plant verdicts on-chain.', tags: ['schema', 'ledger'] },
+    { id: 'Q064', prompt: 'Explain how hash-chained student verdicts could become regulatory evidence.', tags: ['education', 'regulation'] },
+    { id: 'Q065', prompt: 'Describe a workflow where engineers submit fusion incident reports to a hash chain.', tags: ['safety', 'ledger'] },
+    { id: 'Q066', prompt: 'List three privacy concerns with public energy ledgers.', tags: ['privacy', 'ledger'] },
+    { id: 'Q067', prompt: 'Propose one privacy-preserving pattern for publishing plant data.', tags: ['privacy', 'design'] },
+    { id: 'Q068', prompt: "Explain the difference between 'verifiable' and 'trustless' in this context.", tags: ['concepts', 'verification'] },
+    { id: 'Q069', prompt: 'Describe how deterministic reasoning blocks can reduce regulatory ambiguity.', tags: ['reasoning', 'regulation'] },
+    { id: 'Q070', prompt: 'Design a simple probe that tests understanding of fusion risk tradeoffs.', tags: ['probe_design', 'risk'] },
+    { id: 'Q071', prompt: 'Explain why offline-first tools matter for sovereign education.', tags: ['education', 'offline_first'] },
+    { id: 'Q072', prompt: "Describe how a seed phrase backup can secure a student's academic ledger.", tags: ['security', 'identity'] },
+    { id: 'Q073', prompt: 'List three failure modes for cloud-dependent universities.', tags: ['education', 'failure_modes'] },
+    { id: 'Q074', prompt: 'Explain how deterministic verdicts differ from traditional grading.', tags: ['assessment', 'determinism'] },
+    { id: 'Q075', prompt: "Design a rubric for evaluating a student's fusion deployment plan.", tags: ['assessment', 'rubric'] },
+    { id: 'Q076', prompt: "Describe how students could earn 'deployment credits' instead of grades.", tags: ['assessment', 'credits'] },
+    { id: 'Q077', prompt: 'Explain how WebLLM at temp=0 changes the nature of exam questions.', tags: ['LLM', 'determinism'] },
+    { id: 'Q078', prompt: 'Propose one way to detect reasoning shortcuts in drag-and-drop verdicts.', tags: ['quality', 'reasoning'] },
+    { id: 'Q079', prompt: 'Describe how rollback of campus builds could be used pedagogically.', tags: ['infra', 'pedagogy'] },
+    { id: 'Q080', prompt: 'Design a probe that tests whether a student understands infra vs. content.', tags: ['probe_design', 'infra'] },
+    { id: 'Q081', prompt: 'Explain how fusion interacts with climate targets (1.5C, 2C).', tags: ['climate', 'fusion'] },
+    { id: 'Q082', prompt: 'List three sectors beyond electricity that benefit from abundant fusion energy.', tags: ['sectors', 'abundance'] },
+    { id: 'Q083', prompt: 'Describe a scenario where fusion enables radical water security.', tags: ['water', 'security'] },
+    { id: 'Q084', prompt: 'Describe a scenario where fusion enables radical food security.', tags: ['agriculture', 'security'] },
+    { id: 'Q085', prompt: "Explain 'Jevons paradox' and how it might apply to cheap fusion.", tags: ['economics', 'Jevons'] },
+    { id: 'Q086', prompt: 'Propose one policy to avoid rebound effects from cheap energy.', tags: ['policy', 'rebound'] },
+    { id: 'Q087', prompt: 'Describe how fusion could reshape urban design (density, transport, heat).', tags: ['urbanism', 'fusion'] },
+    { id: 'Q088', prompt: "Explain why 'abundance' can be politically destabilizing.", tags: ['politics', 'abundance'] },
+    { id: 'Q089', prompt: 'List three ethical questions raised by global fusion deployment.', tags: ['ethics', 'fusion'] },
+    { id: 'Q090', prompt: 'Design a deliberative process for deciding fusion rollout priorities.', tags: ['governance', 'deliberation'] },
+    { id: 'Q091', prompt: 'Explain how students in this major could directly influence real deployments.', tags: ['pathways', 'impact'] },
+    { id: 'Q092', prompt: "Describe one concrete role: 'fusion deployment architect'.", tags: ['roles', 'career'] },
+    { id: 'Q093', prompt: "Describe one concrete role: 'sovereign energy policy engineer'.", tags: ['roles', 'career'] },
+    { id: 'Q094', prompt: 'Explain how their hash-chained work could become part of a hiring pipeline.', tags: ['credentials', 'hiring'] },
+    { id: 'Q095', prompt: 'Design a degree certificate that references an IPFS hash chain.', tags: ['credentials', 'design'] },
+    { id: 'Q096', prompt: 'List three signals that a student is ready to lead a fusion project.', tags: ['assessment', 'signals'] },
+    { id: 'Q097', prompt: 'Describe how cross-major collaboration (energy + water + agriculture) could work.', tags: ['collaboration', 'majors'] },
+    { id: 'Q098', prompt: "Explain how to extend this syllabus into a second-year 'deployment studio'.", tags: ['curriculum', 'studio'] },
+    { id: 'Q099', prompt: 'Propose one capstone: design a fusion-enabled sovereign city energy plan.', tags: ['capstone', 'city'] },
+    { id: 'Q100', prompt: 'Write a personal manifesto on why you care about energy sovereignty.', tags: ['reflection', 'manifesto'] },
+  ],
+};
+
+const FUSION_SYLLABUS_JSON = JSON.stringify(FUSION_SYLLABUS);
 
 const HYDRO_JSON = JSON.stringify({
   name: 'Hydro-Sovereignty L1',
@@ -258,11 +371,21 @@ const CAMPUS_HTML = `<!DOCTYPE html>
       </div>
     </div>
     <div id="universityPanel" class="panel">
-      <h2 class="text-3xl font-bold mb-4">🎓 Your B.Sc in Adversarial Reasoning</h2>
+      <h2 class="text-3xl font-bold mb-4">🎓 Founding Major: Fusion & Energy Sovereignty</h2>
       <div class="bg-slate-800 p-6 rounded-lg">
         <p id="assignedTrack" class="text-blue-400 font-mono mb-4"></p>
         <p id="thesisReq" class="text-slate-300 mb-4"></p>
-        <button id="enrollBtn" class="px-6 py-3 bg-green-600 rounded tap-target">✅ Start Queries</button>
+        <div class="bg-slate-900 border border-slate-700 rounded-lg p-4 mb-4">
+          <p id="fusionQueryMeta" class="text-xs uppercase tracking-wide text-slate-400 mb-2"></p>
+          <p id="fusionQueryPrompt" class="text-lg font-semibold"></p>
+          <p id="fusionQueryTags" class="text-sm text-blue-300 mt-2"></p>
+          <div class="flex flex-wrap gap-2 mt-4">
+            <button id="prevFusionQuery" class="px-4 py-2 bg-slate-700 rounded tap-target">Previous Query</button>
+            <button id="nextFusionQuery" class="px-4 py-2 bg-blue-600 rounded tap-target">Next Query</button>
+            <button id="exportFusionSyllabus" class="px-4 py-2 bg-green-700 rounded tap-target">Export 100-Query JSON</button>
+          </div>
+        </div>
+        <button id="enrollBtn" class="px-6 py-3 bg-green-600 rounded tap-target">✅ Start Verdict Studio</button>
       </div>
     </div>
     <div id="wordPanel" class="panel">
@@ -329,45 +452,47 @@ const CAMPUS_HTML = `<!DOCTYPE html>
 
 <script>
   // ---------- Deterministic Onboarding ----------
+  const FUSION_SYLLABUS = ${FUSION_SYLLABUS_JSON};
+
   const ONBOARDING = {
     tracks: {
-      hydro: {
-        label: 'Hydro-Biofilter',
-        thesis: 'Design and defend 100 water-sovereignty hypercases.',
-        keywords: ['water', 'filter', 'hydro', 'river', 'well', 'sanitation', 'pathogen', 'drought'],
+      fusion: {
+        label: 'Fusion & Energy Sovereignty',
+        thesis: 'Complete 100 fusion sovereignty verdicts. Judge average >0.85, contradictions <5%.',
+        keywords: ['fusion', 'energy', 'power', 'grid', 'plasma', 'tokamak', 'stellarator', 'electricity', 'nuclear', 'sovereignty'],
       },
-      observation: {
-        label: 'Hydro-Observation',
-        thesis: 'Submit 100 observation-led hypercases.',
-        keywords: [],
+      energy: {
+        label: 'Energy Sovereignty Foundations',
+        thesis: 'Complete the 100-query founding syllabus and produce a sovereign deployment plan.',
+        keywords: ['water', 'health', 'agriculture', 'city', 'industry', 'climate', 'storage', 'desalination'],
       },
     },
     probes: [
       {
-        step: 'SEDIMENTATION',
-        text: 'A jar of muddy water sits overnight. What explains the clearer water at the top?',
+        step: 'ENERGY_SOVEREIGNTY',
+        text: 'What is the core aim of energy sovereignty?',
         choices: [
-          { id: 'A', label: 'Gravity settles heavier suspended particles.', score: { gravity: 2 } },
-          { id: 'B', label: 'The water becomes sterile without treatment.', score: { pathogen: -1 } },
-          { id: 'C', label: 'The particles disappear into solution.', score: { gravity: -1 } },
+          { id: 'A', label: 'A polity can secure reliable power without coercive dependency.', score: { sovereignty: 2 } },
+          { id: 'B', label: 'One vendor controls generation, fuel, and pricing.', score: { sovereignty: -2 } },
+          { id: 'C', label: 'Energy policy is only a household budgeting problem.', score: { sovereignty: -1 } },
         ],
       },
       {
-        step: 'PATHOGEN',
-        text: 'A clear stream still makes students sick. What is the adversarial risk?',
+        step: 'FUSION_FOUNDATIONS',
+        text: 'Which claim best separates fusion from conventional combustion?',
         choices: [
-          { id: 'A', label: 'Invisible pathogens can survive clear water.', score: { pathogen: 2 } },
-          { id: 'B', label: 'Clear water is always safe.', score: { pathogen: -2 } },
-          { id: 'C', label: 'Only color matters for risk.', score: { pathogen: -1 } },
+          { id: 'A', label: 'Fusion releases nuclear binding energy by combining light nuclei.', score: { fusion: 2 } },
+          { id: 'B', label: 'Fusion burns hydrocarbons more efficiently.', score: { fusion: -2 } },
+          { id: 'C', label: 'Fusion is just a larger battery.', score: { fusion: -1 } },
         ],
       },
       {
-        step: 'REDTEAM',
-        text: 'What should a sovereign campus do before trusting a proposed water solution?',
+        step: 'GRID_DEPLOYMENT',
+        text: 'Why does grid integration matter even if fusion becomes technically viable?',
         choices: [
-          { id: 'A', label: 'Attack the assumptions and test failure modes.', score: { redteam: 2 } },
-          { id: 'B', label: 'Accept confidence without evidence.', score: { redteam: -2 } },
-          { id: 'C', label: 'Avoid measurement because it slows action.', score: { redteam: -1 } },
+          { id: 'A', label: 'Firm power still needs transmission, services, financing, and public legitimacy.', score: { deployment: 2 } },
+          { id: 'B', label: 'A reactor automatically solves every grid bottleneck.', score: { deployment: -2 } },
+          { id: 'C', label: 'Deployment is unrelated to politics or supply chains.', score: { deployment: -1 } },
         ],
       },
     ],
@@ -375,7 +500,7 @@ const CAMPUS_HTML = `<!DOCTYPE html>
 
   let onboardingState = {
     intent: '',
-    proposedTrack: 'Hydro-Observation',
+    proposedTrack: ONBOARDING.tracks.fusion.label,
     probeIndex: 0,
     scores: {},
     ledger: JSON.parse(localStorage.getItem('ogen_ledger') || '[]'),
@@ -408,8 +533,9 @@ const CAMPUS_HTML = `<!DOCTYPE html>
 
   function inferTrack(intent) {
     const text = intent.toLowerCase();
-    const hydroHits = ONBOARDING.tracks.hydro.keywords.filter(word => text.includes(word)).length;
-    return hydroHits > 0 ? ONBOARDING.tracks.hydro.label : ONBOARDING.tracks.observation.label;
+    const fusionHits = ONBOARDING.tracks.fusion.keywords.filter(word => text.includes(word)).length;
+    const energyHits = ONBOARDING.tracks.energy.keywords.filter(word => text.includes(word)).length;
+    return fusionHits >= energyHits ? ONBOARDING.tracks.fusion.label : ONBOARDING.tracks.energy.label;
   }
 
   async function processIntent() {
@@ -471,10 +597,12 @@ const CAMPUS_HTML = `<!DOCTYPE html>
   }
 
   async function finalizeOnboarding() {
-    const track = onboardingState.scores.pathogen >= 2 ? 'Hydro-Biofilter' : onboardingState.proposedTrack;
-    const thesis = track === 'Hydro-Biofilter'
-      ? ONBOARDING.tracks.hydro.thesis
-      : ONBOARDING.tracks.observation.thesis;
+    const track = (onboardingState.scores.fusion || 0) >= 2 && (onboardingState.scores.deployment || 0) >= 2
+      ? ONBOARDING.tracks.fusion.label
+      : onboardingState.proposedTrack;
+    const thesis = track === ONBOARDING.tracks.fusion.label
+      ? ONBOARDING.tracks.fusion.thesis
+      : ONBOARDING.tracks.energy.thesis;
     await appendLedger({ type: 'final', track, scores: Object.assign({}, onboardingState.scores) });
     localStorage.setItem('ogen_track', track);
     localStorage.setItem('ogen_thesis', thesis);
@@ -486,9 +614,39 @@ const CAMPUS_HTML = `<!DOCTYPE html>
   function showCampus(track, thesis) {
     byId('onboardingOverlay').style.display = 'none';
     byId('campusUI').style.display = 'block';
-    byId('assignedTrack').innerText = track || localStorage.getItem('ogen_track') || 'Hydro Track';
-    byId('thesisReq').innerText = thesis || localStorage.getItem('ogen_thesis') || 'Submit 100 hypercases.';
+    byId('assignedTrack').innerText = track || localStorage.getItem('ogen_track') || ONBOARDING.tracks.fusion.label;
+    byId('thesisReq').innerText = thesis || localStorage.getItem('ogen_thesis') || ONBOARDING.tracks.fusion.thesis;
+    renderFusionQuery();
     showPanel('verdict');
+  }
+
+  let fusionQueryIndex = Number(localStorage.getItem('ogen_fusion_query_index') || '0');
+
+  function clampFusionQueryIndex(index) {
+    return Math.max(0, Math.min(FUSION_SYLLABUS.queries.length - 1, index));
+  }
+
+  function renderFusionQuery() {
+    fusionQueryIndex = clampFusionQueryIndex(fusionQueryIndex);
+    const query = FUSION_SYLLABUS.queries[fusionQueryIndex];
+    if (!query || !byId('fusionQueryPrompt')) return;
+    byId('fusionQueryMeta').innerText = FUSION_SYLLABUS.title + ' - ' + query.id + ' of ' + FUSION_SYLLABUS.queries.length;
+    byId('fusionQueryPrompt').innerText = query.prompt;
+    byId('fusionQueryTags').innerText = 'Tags: ' + query.tags.join(', ');
+    localStorage.setItem('ogen_fusion_query_index', String(fusionQueryIndex));
+  }
+
+  function moveFusionQuery(delta) {
+    fusionQueryIndex = clampFusionQueryIndex(fusionQueryIndex + delta);
+    renderFusionQuery();
+  }
+
+  function exportFusionSyllabus() {
+    const blob = new Blob([JSON.stringify(FUSION_SYLLABUS, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = FUSION_SYLLABUS.presetId + '.json';
+    a.click();
   }
 
   window.processIntent = processIntent;
@@ -561,6 +719,9 @@ const CAMPUS_HTML = `<!DOCTYPE html>
   document.getElementById('btnWord').onclick = () => showPanel('word');
   document.getElementById('btnImage').onclick = () => showPanel('image');
   document.getElementById('enrollBtn').onclick = () => showPanel('verdict');
+  document.getElementById('prevFusionQuery').onclick = () => moveFusionQuery(-1);
+  document.getElementById('nextFusionQuery').onclick = () => moveFusionQuery(1);
+  document.getElementById('exportFusionSyllabus').onclick = exportFusionSyllabus;
 
   // Fixed image upload & download
   document.getElementById('imageUpload').onchange = e => {
@@ -593,7 +754,7 @@ const CAMPUS_HTML = `<!DOCTYPE html>
 
   // Restore onboarding state if already completed
   if (localStorage.getItem('ogen_onboarded') === 'true') {
-    showCampus(localStorage.getItem('ogen_track') || 'Hydro Track', localStorage.getItem('ogen_thesis') || 'Submit 100 hypercases.');
+    showCampus(localStorage.getItem('ogen_track') || ONBOARDING.tracks.fusion.label, localStorage.getItem('ogen_thesis') || ONBOARDING.tracks.fusion.thesis);
   } else {
     renderVerdicts();
   }
