@@ -59,10 +59,13 @@ interface RuleInput {
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, X-API-Key",
+  "Access-Control-Allow-Headers": "Content-Type, X-API-Key, Authorization",
 };
 
+// Tier 1 (API key, X-API-Key header) protects most endpoints.
+// Tier 2 (elevated, Authorization: Bearer <JWT_SECRET>) protects audit endpoints.
 const publicPaths = ["/health", "/rule_fields"];
+const tier2Paths = ["/logs"];
 
 const DOMAIN_FIELDS: Record<string, string[]> = {
   aerospace: ["altitude", "aoa", "angle_of_attack", "mach", "wing_load"],
@@ -93,10 +96,8 @@ export default {
     }
 
     if (!publicPaths.includes(path)) {
-      const apiKey = request.headers.get("X-API-Key");
-      if (!env.API_KEY || apiKey !== env.API_KEY) {
-        return new Response("Unauthorized", { status: 401, headers: corsHeaders });
-      }
+      const authError = authorize(request, env, path);
+      if (authError) return authError;
     }
 
     if (path.startsWith("/evidence/") && request.method === "GET") {
@@ -273,6 +274,27 @@ export default {
     return new Response("Not found", { status: 404, headers: corsHeaders });
   },
 };
+
+function authorize(request: Request, env: Env, path: string): Response | null {
+  if (tier2Paths.includes(path)) {
+    const header = request.headers.get("Authorization") || "";
+    const token = header.startsWith("Bearer ") ? header.slice("Bearer ".length).trim() : "";
+    if (!env.JWT_SECRET || token !== env.JWT_SECRET) {
+      return unauthorized();
+    }
+    return null;
+  }
+
+  const apiKey = request.headers.get("X-API-Key");
+  if (!env.API_KEY || apiKey !== env.API_KEY) {
+    return unauthorized();
+  }
+  return null;
+}
+
+function unauthorized(): Response {
+  return new Response("Unauthorized", { status: 401, headers: corsHeaders });
+}
 
 function evalOp(op: string, val: unknown, target: unknown): EvalResult {
   const actual = normalizeValue(val);
