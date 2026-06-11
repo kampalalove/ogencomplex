@@ -1,7 +1,9 @@
 export interface Env {
   D1_VERITAS: D1Database;
   R2_VERITAS: R2Bucket;
+  KV_VERITAS: KVNamespace;
   API_KEY: string;
+  JWT_SECRET?: string;
 }
 
 type Expr = Record<string, unknown>;

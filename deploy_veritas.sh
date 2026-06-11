@@ -46,12 +46,29 @@ if [ -z "$DB_ID" ]; then
 fi
 echo "✅ Database ID: $DB_ID"
 
+KV_ID="${KV_NAMESPACE_ID:-}"
+if [ -z "$KV_ID" ]; then
+    echo "📦 Creating KV namespace..."
+    KV_OUTPUT=$(npx wrangler kv:namespace create KV_VERITAS 2>&1 || true)
+    KV_ID=$(echo "$KV_OUTPUT" | grep -oE 'id = "[a-f0-9]+"' | head -1 | cut -d'"' -f2)
+    if [ -z "$KV_ID" ]; then
+        echo "❌ FATAL: Could not extract KV namespace ID from wrangler output."
+        echo "Output was: $KV_OUTPUT"
+        exit 1
+    fi
+fi
+echo "✅ KV namespace ID: $KV_ID"
+
 # 2. Apply schema and seed rules
 echo "🗄️  Applying D1 schema..."
 npx wrangler d1 execute veritas_kb --file=schema.sql
 if [ -f "schema_upgrade_disciplines.sql" ]; then
     echo "🗄️  Applying optional schema upgrade for existing databases..."
     npx wrangler d1 execute veritas_kb --file=schema_upgrade_disciplines.sql || echo "⚠️  Schema upgrade skipped or already applied."
+fi
+if [ -f "schema_upgrade_v3.sql" ]; then
+    echo "🗄️  Applying optional v3 schema upgrade..."
+    npx wrangler d1 execute veritas_kb --file=schema_upgrade_v3.sql || echo "⚠️  V3 schema upgrade skipped or already applied."
 fi
 echo "📜 Seeding Veritas rules..."
 npx wrangler d1 execute veritas_kb --file=more_rules.sql
@@ -69,13 +86,19 @@ rm -rf worker
 mkdir -p worker
 cp -R veritas-worker/src worker/src
 cp veritas-worker/wrangler.toml worker/wrangler.toml
-sed -i.bak "s/database_id = \"your-d1-database-id-here\"/database_id = \"$DB_ID\"/" worker/wrangler.toml
+sed -i.bak "s/database_id = \".*\"/database_id = \"$DB_ID\"/" worker/wrangler.toml
+sed -i.bak "s/id = \"YOUR_KV_NAMESPACE_ID\"/id = \"$KV_ID\"/" worker/wrangler.toml
 rm -f worker/wrangler.toml.bak
 
 # 5. Deploy Worker
 echo "🌐 Deploying Worker..."
 cd worker
 printf "%s" "$API_KEY_VALUE" | npx wrangler secret put API_KEY
+if [ -n "${JWT_SECRET:-}" ]; then
+    printf "%s" "$JWT_SECRET" | npx wrangler secret put JWT_SECRET
+else
+    echo "⚠️  JWT_SECRET not set; configure later with: npx wrangler secret put JWT_SECRET"
+fi
 DEPLOY_OUTPUT=$(npx wrangler deploy 2>&1)
 echo "$DEPLOY_OUTPUT"
 WORKER_URL=$(echo "$DEPLOY_OUTPUT" | grep -oE 'https://[^[:space:]]+workers\.dev' | head -1 || true)

@@ -7,9 +7,14 @@ compatibility_date = "2025-06-11"
 [[d1_databases]]
 binding = "D1_VERITAS"
 database_name = "veritas_kb"
-database_id = "your-d1-database-id-here"
+database_id = "35ed42f6-aa2f-4d7b-a2d9-62171dd33dc0"
 
 # R2 bucket binding
 [[r2_buckets]]
 binding = "R2_VERITAS"
 bucket_name = "veritas-assets"
+
+# KV namespace for tiered API keys / cache metadata.
+[[kv_namespaces]]
+binding = "KV_VERITAS"
+id = "YOUR_KV_NAMESPACE_ID"
