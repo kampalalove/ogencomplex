@@ -46,8 +46,21 @@ def evaluate_operation(actual_raw: Any, op: str, expected_raw: Any) -> bool:
         return actual <= expected
     if op in ("==", "eq"):
         return actual == expected
+    if op in ("!=", "ne"):
+        return actual != expected
     if op == "contains" and isinstance(actual, str):
         return str(expected) in actual
+    if op == "in" and isinstance(expected, list):
+        return actual in [normalize_value(item) for item in expected]
+    if op == "between" and isinstance(expected, list) and len(expected) == 2:
+        low = normalize_value(expected[0])
+        high = normalize_value(expected[1])
+        return (
+            isinstance(actual, (int, float))
+            and isinstance(low, (int, float))
+            and isinstance(high, (int, float))
+            and low <= actual <= high
+        )
     return False
 
 

@@ -51,10 +51,6 @@ echo "🗄️  Applying D1 schema..."
 npx wrangler d1 execute veritas_kb --file=schema.sql
 echo "📜 Seeding Veritas rules..."
 npx wrangler d1 execute veritas_kb --file=more_rules.sql
-if [ -f "more_rules_extra.sql" ]; then
-    echo "📜 Seeding extra Veritas rules..."
-    npx wrangler d1 execute veritas_kb --file=more_rules_extra.sql
-fi
 
 # 3. Create R2 bucket (ignore already-exists failures)
 echo "🪣 Ensuring R2 bucket exists..."
@@ -99,5 +95,6 @@ echo "🌍 Worker URL: $WORKER_URL"
 echo "🌍 Frontend URL: $PAGES_URL"
 echo "🔑 API key: $API_KEY_VALUE"
 echo "🪣 Upload evidence with: npx wrangler r2 object put veritas-assets/manuals/thermal_emergency.pdf --file=./local.pdf"
+echo "➕ Optional extra rules: npx wrangler d1 execute veritas_kb --file=more_rules_extra.sql"
 echo "🧪 Test with: curl $WORKER_URL/health"
 echo "🧪 Auth test: curl -H 'X-API-Key: $API_KEY_VALUE' $WORKER_URL/rules"

@@ -10,11 +10,19 @@
     },
     {
       "rule_name": "critical_temperature",
-      "condition_json": "{\"temperature\":{\"gt\":105}}",
+      "condition_json": "{\"temperature\":{\"gte\":105}}",
       "action_text": "CRITICAL: Shutdown recommended. Immediate inspection required.",
       "priority": 100,
       "category": "thermal",
       "evidence_source": "manuals/thermal_emergency.pdf"
+    },
+    {
+      "rule_name": "nominal_pressure_band",
+      "condition_json": "{\"pressure\":{\"between\":[95,125]}}",
+      "action_text": "Pressure is within nominal operating band.",
+      "priority": 1,
+      "category": "mechanical",
+      "evidence_source": null
     },
     {
       "rule_name": "high_pressure",
@@ -25,20 +33,44 @@
       "evidence_source": null
     },
     {
-      "rule_name": "high_humidity",
-      "condition_json": "{\"humidity\":{\"gt\":85}}",
-      "action_text": "High humidity. Risk of condensation on electronics.",
-      "priority": 12,
-      "category": "environmental",
+      "rule_name": "low_fuel",
+      "condition_json": "{\"fuel_level\":{\"lte\":10}}",
+      "action_text": "Low fuel. Plan refueling soon.",
+      "priority": 10,
+      "category": "logistics",
       "evidence_source": null
     },
     {
+      "rule_name": "critical_fuel",
+      "condition_json": "{\"fuel_level\":{\"lt\":3}}",
+      "action_text": "CRITICAL FUEL LEVEL. Immediate refuel required.",
+      "priority": 100,
+      "category": "logistics",
+      "evidence_source": null
+    },
+    {
+      "rule_name": "mission_mode_restricted",
+      "condition_json": "{\"mode\":{\"in\":[\"restricted\",\"manual_override_required\"]}}",
+      "action_text": "Restricted mission mode. Operator approval required.",
+      "priority": 50,
+      "category": "operations",
+      "evidence_source": "manuals/operator_policy_v1.pdf"
+    },
+    {
       "rule_name": "engine_fire_detected",
-      "condition_json": "{\"fire_detected\":true}",
-      "action_text": "ENGINE FIRE. Execute fire suppression procedure immediately.",
+      "condition_json": "{\"fire_detected\":{\"eq\":true}}",
+      "action_text": "ENGINE FIRE. Execute suppression procedure immediately.",
       "priority": 100,
       "category": "emergency",
       "evidence_source": "manuals/engine_fire.pdf"
+    },
+    {
+      "rule_name": "sensor_status_not_ok",
+      "condition_json": "{\"sensor_status\":{\"ne\":\"ok\"}}",
+      "action_text": "Sensor status is degraded. Switch to redundant sensing and preserve evidence.",
+      "priority": 35,
+      "category": "perception",
+      "evidence_source": "manuals/perception_policy_v1.pdf"
     }
   ]
 }

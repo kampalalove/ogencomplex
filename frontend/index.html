@@ -99,6 +99,9 @@
         const data = await apiCall('/advise', 'POST', payload);
         if (data && data.matches) {
           let html = '<h3>Matches:</h3>';
+          if (data.meta) {
+            html += `<pre>${escapeHtml(JSON.stringify(data.meta, null, 2))}</pre>`;
+          }
           if (data.matches.length === 0) html += '<p>No matching rules.</p>';
           else {
             html += '<ul>';
@@ -106,12 +109,17 @@
               const ruleName = m.rule_name || m.rule || 'rule';
               const action = m.action_text || m.action || '';
               html += `<li><strong>${escapeHtml(ruleName)}</strong> (${escapeHtml(m.category)}): ${escapeHtml(action)}`;
-              if (m.evidence_url) html += ` <a href="${escapeHtml(m.evidence_url)}" target="_blank" rel="noopener">Evidence</a>`;
+              if (m.evidence_url) {
+                html += ` <button data-evidence-url="${escapeHtml(m.evidence_url)}">Evidence</button>`;
+              }
               html += '</li>';
             }
             html += '</ul>';
           }
           resultDiv.innerHTML = html;
+          document.querySelectorAll('[data-evidence-url]').forEach(button => {
+            button.onclick = () => openEvidence(button.getAttribute('data-evidence-url'));
+          });
         } else {
           resultDiv.innerHTML = '<div class="error">Unexpected response format.</div>';
         }
@@ -119,6 +127,17 @@
         resultDiv.innerHTML = `<div class="error">Error: ${escapeHtml(err.message)}</div>`;
       }
     };
+
+    async function openEvidence(url) {
+      try {
+        const res = await fetch(url, { headers: { 'X-API-Key': apiKeyInput.value.trim() } });
+        if (!res.ok) throw new Error(await res.text());
+        const blob = await res.blob();
+        window.open(URL.createObjectURL(blob), '_blank', 'noopener');
+      } catch (err) {
+        resultDiv.innerHTML += `<div class="error">Evidence error: ${escapeHtml(err.message)}</div>`;
+      }
+    }
 
     listRulesBtn.onclick = async () => {
       resultDiv.innerHTML = 'Loading rules...';

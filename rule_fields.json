@@ -9,6 +9,8 @@
     "vibration",
     "altitude",
     "wind_speed",
+    "mode",
+    "sensor_status",
     "angle_of_attack",
     "oxygen_saturation",
     "heart_rate",

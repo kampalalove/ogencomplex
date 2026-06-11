@@ -2,42 +2,47 @@
   {
     "name": "high_temp_only",
     "input": {
-      "temperature": 90
+      "temperature": 95
     },
     "expected_actions": [
       "High temperature detected. Check cooling system."
     ]
   },
   {
-    "name": "critical_temp",
+    "name": "critical_temp_and_pressure_band",
     "input": {
-      "temperature": 110
+      "temperature": 110,
+      "pressure": 120
     },
     "expected_actions": [
       "High temperature detected. Check cooling system.",
-      "CRITICAL: Shutdown recommended. Immediate inspection required."
+      "CRITICAL: Shutdown recommended. Immediate inspection required.",
+      "Pressure is within nominal operating band."
     ]
   },
   {
-    "name": "multi_condition",
+    "name": "fuel_and_mode",
     "input": {
-      "temperature": 88,
-      "pressure": 135,
-      "humidity": 88
+      "fuel_level": 8,
+      "mode": "restricted"
     },
     "expected_actions": [
-      "High temperature detected. Check cooling system.",
-      "Pressure exceeds normal range. Inspect seals and relief valves.",
-      "High humidity. Risk of condensation on electronics."
+      "Low fuel. Plan refueling soon.",
+      "Restricted mission mode. Operator approval required."
     ]
   },
   {
-    "name": "engine_fire_boolean",
+    "name": "critical_fuel_fire_and_sensor_degraded",
     "input": {
-      "fire_detected": true
+      "fuel_level": 2,
+      "fire_detected": true,
+      "sensor_status": "fault"
     },
     "expected_actions": [
-      "ENGINE FIRE. Execute fire suppression procedure immediately."
+      "Low fuel. Plan refueling soon.",
+      "CRITICAL FUEL LEVEL. Immediate refuel required.",
+      "ENGINE FIRE. Execute suppression procedure immediately.",
+      "Sensor status is degraded. Switch to redundant sensing and preserve evidence."
     ]
   }
 ]
