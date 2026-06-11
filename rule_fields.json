@@ -1,0 +1,18 @@
+{
+  "fields": [
+    "temperature",
+    "pressure",
+    "humidity",
+    "current",
+    "voltage",
+    "fuel_level",
+    "vibration",
+    "altitude",
+    "wind_speed",
+    "angle_of_attack",
+    "oxygen_saturation",
+    "heart_rate",
+    "descent_rate",
+    "fire_detected"
+  ]
+}

@@ -1,40 +1,43 @@
 [
   {
-    "name": "thermal and battery safety actions",
+    "name": "high_temp_only",
     "input": {
-      "temperature_c": 92,
-      "battery_pct": 12
+      "temperature": 90
     },
     "expected_actions": [
-      "Initiate thermal shutdown and inspect cooling path.",
-      "Return to base and preserve reserve power."
+      "High temperature detected. Check cooling system."
     ]
   },
   {
-    "name": "restricted zone strict equality",
+    "name": "critical_temp",
     "input": {
-      "zone": "restricted"
+      "temperature": 110
     },
     "expected_actions": [
-      "Stop route execution and request operator authorization."
+      "High temperature detected. Check cooling system.",
+      "CRITICAL: Shutdown recommended. Immediate inspection required."
     ]
   },
   {
-    "name": "weather contains rain",
+    "name": "multi_condition",
     "input": {
-      "weather_detected": "light rain approaching"
+      "temperature": 88,
+      "pressure": 135,
+      "humidity": 88
     },
     "expected_actions": [
-      "Abort outdoor mission and protect exposed electronics."
+      "High temperature detected. Check cooling system.",
+      "Pressure exceeds normal range. Inspect seals and relief valves.",
+      "High humidity. Risk of condensation on electronics."
     ]
   },
   {
-    "name": "no false positive for unrestricted zone",
+    "name": "engine_fire_boolean",
     "input": {
-      "zone": "unrestricted",
-      "temperature_c": 70,
-      "battery_pct": 50
+      "fire_detected": true
     },
-    "expected_actions": []
+    "expected_actions": [
+      "ENGINE FIRE. Execute fire suppression procedure immediately."
+    ]
   }
 ]

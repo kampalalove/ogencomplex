@@ -1,36 +1,44 @@
 {
   "rules": [
     {
-      "rule_name": "high_temperature_shutdown",
-      "condition_json": "{\"field\":\"temperature_c\",\"op\":\">\",\"value\":85}",
-      "action_text": "Initiate thermal shutdown and inspect cooling path.",
-      "evidence_source": "manuals/thermal_policy_v1.pdf",
-      "priority": "high",
-      "category": "safety"
+      "rule_name": "high_temperature",
+      "condition_json": "{\"temperature\":{\"gt\":85}}",
+      "action_text": "High temperature detected. Check cooling system.",
+      "priority": 10,
+      "category": "thermal",
+      "evidence_source": null
     },
     {
-      "rule_name": "low_battery_return",
-      "condition_json": "{\"field\":\"battery_pct\",\"op\":\"<\",\"value\":20}",
-      "action_text": "Return to base and preserve reserve power.",
-      "evidence_source": "manuals/power_policy_v1.pdf",
-      "priority": "high",
-      "category": "energy"
+      "rule_name": "critical_temperature",
+      "condition_json": "{\"temperature\":{\"gt\":105}}",
+      "action_text": "CRITICAL: Shutdown recommended. Immediate inspection required.",
+      "priority": 100,
+      "category": "thermal",
+      "evidence_source": "manuals/thermal_emergency.pdf"
     },
     {
-      "rule_name": "restricted_zone_stop",
-      "condition_json": "{\"field\":\"zone\",\"op\":\"==\",\"value\":\"restricted\"}",
-      "action_text": "Stop route execution and request operator authorization.",
-      "evidence_source": "manuals/airspace_policy_v1.pdf",
-      "priority": "critical",
-      "category": "compliance"
+      "rule_name": "high_pressure",
+      "condition_json": "{\"pressure\":{\"gt\":130}}",
+      "action_text": "Pressure exceeds normal range. Inspect seals and relief valves.",
+      "priority": 10,
+      "category": "mechanical",
+      "evidence_source": null
     },
     {
-      "rule_name": "rain_detected_abort",
-      "condition_json": "{\"field\":\"weather_detected\",\"op\":\"contains\",\"value\":\"rain\"}",
-      "action_text": "Abort outdoor mission and protect exposed electronics.",
-      "evidence_source": "manuals/weather_policy_v1.pdf",
-      "priority": "medium",
-      "category": "weather"
+      "rule_name": "high_humidity",
+      "condition_json": "{\"humidity\":{\"gt\":85}}",
+      "action_text": "High humidity. Risk of condensation on electronics.",
+      "priority": 12,
+      "category": "environmental",
+      "evidence_source": null
+    },
+    {
+      "rule_name": "engine_fire_detected",
+      "condition_json": "{\"fire_detected\":true}",
+      "action_text": "ENGINE FIRE. Execute fire suppression procedure immediately.",
+      "priority": 100,
+      "category": "emergency",
+      "evidence_source": "manuals/engine_fire.pdf"
     }
   ]
 }

@@ -1,0 +1,19 @@
+# wrangler.toml (Veritas Worker)
+name = "veritas-worker"
+main = "src/index.ts"
+compatibility_date = "2025-06-11"
+
+# D1 Database binding
+[[d1_databases]]
+binding = "D1_VERITAS"
+database_name = "veritas_kb"
+database_id = "your-d1-database-id-here"
+
+# R2 bucket binding
+[[r2_buckets]]
+binding = "R2_VERITAS"
+bucket_name = "veritas-assets"
+
+# Environment variables (production)
+[env.production]
+vars = { ENVIRONMENT = "production" }

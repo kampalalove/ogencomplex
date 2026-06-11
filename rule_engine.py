@@ -22,11 +22,55 @@ def load_rules(path: str) -> list[dict[str, Any]]:
 
 def normalize_value(value: Any) -> Any:
     if isinstance(value, str):
+        if value == "true":
+            return True
+        if value == "false":
+            return False
         try:
             return float(value) if "." in value else int(value)
         except ValueError:
             return value
     return value
+
+
+def evaluate_operation(actual_raw: Any, op: str, expected_raw: Any) -> bool:
+    actual = normalize_value(actual_raw)
+    expected = normalize_value(expected_raw)
+    if op in (">", "gt") and isinstance(actual, (int, float)) and isinstance(expected, (int, float)):
+        return actual > expected
+    if op in ("<", "lt") and isinstance(actual, (int, float)) and isinstance(expected, (int, float)):
+        return actual < expected
+    if op in (">=", "gte") and isinstance(actual, (int, float)) and isinstance(expected, (int, float)):
+        return actual >= expected
+    if op in ("<=", "lte") and isinstance(actual, (int, float)) and isinstance(expected, (int, float)):
+        return actual <= expected
+    if op in ("==", "eq"):
+        return actual == expected
+    if op == "contains" and isinstance(actual, str):
+        return str(expected) in actual
+    return False
+
+
+def evaluate_condition(payload: dict[str, Any], condition: dict[str, Any]) -> bool:
+    if isinstance(condition.get("field"), str) and isinstance(condition.get("op"), str):
+        field = condition["field"]
+        if field not in payload:
+            return False
+        return evaluate_operation(payload[field], condition["op"], condition.get("value"))
+
+    for field, spec in condition.items():
+        if field not in payload:
+            return False
+        if isinstance(spec, (bool, int, float, str)):
+            if normalize_value(payload[field]) != normalize_value(spec):
+                return False
+            continue
+        if not isinstance(spec, dict):
+            return False
+        for op, expected in spec.items():
+            if not evaluate_operation(payload[field], op, expected):
+                return False
+    return True
 
 
 def evaluate_rules(payload: dict[str, Any], rules: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -38,24 +82,7 @@ def evaluate_rules(payload: dict[str, Any], rules: list[dict[str, Any]]) -> list
         except json.JSONDecodeError:
             continue
 
-        field = condition.get("field")
-        op = condition.get("op")
-        expected = condition.get("value")
-        if not field or not op or expected is None or field not in payload:
-            continue
-
-        actual = normalize_value(payload[field])
-        hit = False
-        if op == ">" and isinstance(actual, (int, float)):
-            hit = actual > expected
-        elif op == "<" and isinstance(actual, (int, float)):
-            hit = actual < expected
-        elif op == "==":
-            hit = actual == expected
-        elif op == "contains" and isinstance(actual, str):
-            hit = str(expected) in actual
-
-        if hit:
+        if evaluate_condition(payload, condition):
             matches.append(
                 {
                     "rule": rule.get("rule_name"),
