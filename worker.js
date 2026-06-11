@@ -21,6 +21,11 @@ export default {
 
     // ----- VERIFY LEDGER -----
     if (path === '/verify') {
+      const root = url.searchParams.get('hash');
+      if (root) {
+        return verifyDegree(root, env);
+      }
+
       return htmlResponse(VERIFY_HTML);
     }
 
@@ -108,13 +113,44 @@ const LANDING_HTML = `<!DOCTYPE html>
 
 const VERIFY_HTML = `<!DOCTYPE html>
 <html>
-<head><title>OGEN Ledger Verifier</title></head>
-<body style="background:#0f172a;color:#fff;font-family:monospace;padding:20px;">
-  <h1>📜 OGEN Ledger Verifier</h1>
-  <textarea id="ledger" rows="10" style="width:100%;background:#1e293b;color:#fff;"></textarea>
-  <button onclick="verify()">Verify & Replay</button>
-  <pre id="output"></pre>
+<head>
+  <title>OGEN Degree Verification</title>
+  <style>
+    body { background:#0f172a; color:#fff; font-family:system-ui, sans-serif; margin:0; padding:32px; }
+    main { max-width:900px; margin:0 auto; }
+    input, textarea { width:100%; box-sizing:border-box; background:#1e293b; color:#fff; border:1px solid #475569; border-radius:8px; padding:12px; }
+    button { background:#2563eb; color:#fff; border:0; border-radius:8px; cursor:pointer; font:inherit; margin-top:12px; padding:12px 16px; }
+    pre { background:#020617; border:1px solid #334155; border-radius:8px; overflow:auto; padding:16px; }
+    .card { background:#1e293b; border:1px solid #334155; border-radius:12px; margin:20px 0; padding:20px; }
+    .muted { color:#94a3b8; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Fusion & Energy Sovereignty - Degree Verification</h1>
+    <p class="muted">Enter a student root hash to open the public, Worker-side transcript verifier.</p>
+    <form id="verifyForm" class="card">
+      <label for="rootHash"><strong>Student Root Hash</strong></label>
+      <input id="rootHash" placeholder="student_root_hash">
+      <button type="submit">Open Public Verification Page</button>
+    </form>
+
+    <section class="card">
+      <h2>Manual local ledger replay</h2>
+      <p class="muted">Paste exported local onboarding entries to replay the fusion onboarding chain in this browser.</p>
+      <textarea id="ledger" rows="10"></textarea>
+      <button onclick="verify()">Verify & Replay</button>
+      <pre id="output"></pre>
+    </section>
+  </main>
   <script>
+    document.getElementById('verifyForm').onsubmit = event => {
+      event.preventDefault();
+      const hash = document.getElementById('rootHash').value.trim();
+      if (!hash) return;
+      location.href = '/verify?hash=' + encodeURIComponent(hash);
+    };
+
     async function verify() {
       let entries;
       try {
@@ -135,7 +171,7 @@ const VERIFY_HTML = `<!DOCTYPE html>
         if (e.type === 'probe' && e.step === 'GRID_DEPLOYMENT' && e.choice === 'A') state.scores.deployment = (state.scores.deployment || 0) + 2;
         if (e.type === 'final') state.track = (state.scores.fusion >= 2 && state.scores.deployment >= 2) ? 'Fusion & Energy Sovereignty' : 'Energy Sovereignty Foundations';
       }
-      let out = state.corrupted ? '❌ Ledger corrupted' : '✅ Valid. Track: ' + state.track + '\\nScores: ' + JSON.stringify(state.scores);
+      let out = state.corrupted ? 'Ledger corrupted' : 'Valid. Track: ' + state.track + '\\nScores: ' + JSON.stringify(state.scores);
       document.getElementById('output').innerText = out;
     }
   </script>
@@ -795,6 +831,99 @@ async function kvPut(env, key, value) {
   fallbackKv.set(key, value);
 }
 
+async function verifyDegree(root, env) {
+  const chain = await ledgerGet(env, `LEDGER:${root}`);
+
+  if (!chain) {
+    return htmlResponse(`<h1>No record found for hash: ${escapeHtml(root)}</h1>`);
+  }
+
+  if (!Array.isArray(chain.entries)) {
+    return new Response('Malformed ledger chain', { status: 422 });
+  }
+
+  const replay = [];
+  let prev = null;
+
+  for (const entry of chain.entries) {
+    const computed = await sha256(JSON.stringify({
+      prev,
+      q: entry.q,
+      a: entry.a,
+      verdict: entry.verdict,
+    }));
+
+    replay.push({
+      id: entry.id,
+      q: entry.q,
+      a: entry.a,
+      verdict: entry.verdict || {},
+      expected: entry.hash,
+      computed,
+      ok: computed === entry.hash,
+    });
+
+    prev = entry.hash;
+  }
+
+  const passed = replay.filter(entry => Number(entry.verdict.score) >= 1).length;
+  const total = replay.length;
+  const chainIntact = replay.every(entry => entry.ok);
+  const graduated = chainIntact && total === 100 && passed === 100;
+
+  return htmlResponse(renderVerifyPage(root, replay, graduated, { passed, total, chainIntact }));
+}
+
+async function ledgerGet(env, key) {
+  if (env.LEDGER) {
+    return env.LEDGER.get(key, { type: 'json' });
+  }
+
+  return null;
+}
+
+function renderVerifyPage(root, replay, graduated, summary) {
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <title>Degree Verification - ${escapeHtml(root)}</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 2rem; max-width: 960px; margin: auto; color:#111827; }
+    .ok { color: #047857; }
+    .bad { color: #b91c1c; }
+    .entry { padding: 1rem 0; border-bottom: 1px solid #ddd; }
+    .q { font-weight: 600; }
+    .verdict { font-family: monospace; background: #f7f7f7; padding: 0.5rem; white-space: pre-wrap; }
+    .summary { background:#f8fafc; border:1px solid #e5e7eb; border-radius:12px; padding:1rem; }
+    .muted { color:#64748b; }
+  </style>
+</head>
+<body>
+  <h1>Fusion & Energy Sovereignty - Degree Verification</h1>
+  <section class="summary">
+    <p><strong>Student Root Hash:</strong> <code>${escapeHtml(root)}</code></p>
+    <p><strong>Status:</strong> ${graduated ? '🎓 Graduated' : 'In Progress'}</p>
+    <p><strong>Passed Queries:</strong> ${summary.passed} / ${summary.total}</p>
+    <p><strong>Hash Chain:</strong> <span class="${summary.chainIntact ? 'ok' : 'bad'}">${summary.chainIntact ? 'Intact' : 'Broken'}</span></p>
+  </section>
+  <hr>
+
+  ${replay.map(entry => `
+    <div class="entry">
+      <div class="q">Q${escapeHtml(entry.id)}: ${escapeHtml(entry.q)}</div>
+      <div><strong>Answer:</strong> ${escapeHtml(entry.a)}</div>
+      <div class="verdict">Judge Score: ${escapeHtml(String(entry.verdict.score ?? 'n/a'))}</div>
+      <div class="${entry.ok ? 'ok' : 'bad'}">
+        Hash Check: ${entry.ok ? '✓' : '✗'}
+      </div>
+      <div class="muted"><small>Expected: ${escapeHtml(entry.expected || '')}</small></div>
+      <div class="muted"><small>Computed: ${escapeHtml(entry.computed)}</small></div>
+    </div>
+  `).join('')}
+</body>
+</html>`;
+}
+
 function htmlResponse(html) {
   return new Response(html, {
     headers: {
@@ -812,6 +941,15 @@ function jsonResponse(body, init = {}) {
       ...(init.headers || {}),
     },
   });
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 // Helper
