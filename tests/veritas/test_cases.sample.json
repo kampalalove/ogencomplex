@@ -44,5 +44,25 @@
       "ENGINE FIRE. Execute suppression procedure immediately.",
       "Sensor status is degraded. Switch to redundant sensing and preserve evidence."
     ]
+  },
+  {
+    "name": "all_operator_heat_and_smoke",
+    "input": {
+      "temperature": 90,
+      "smoke": true
+    },
+    "expected_actions": [
+      "High temperature detected. Check cooling system.",
+      "Heat and smoke detected together. Treat as confirmed fire."
+    ]
+  },
+  {
+    "name": "any_operator_ph_out_of_range",
+    "input": {
+      "ph": 9
+    },
+    "expected_actions": [
+      "pH is outside safe operating range."
+    ]
   }
 ]

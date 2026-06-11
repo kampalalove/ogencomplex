@@ -1,20 +1,12 @@
 {
-  "fields": [
-    "temperature",
-    "pressure",
-    "humidity",
-    "current",
-    "voltage",
-    "fuel_level",
-    "vibration",
-    "altitude",
-    "wind_speed",
-    "mode",
-    "sensor_status",
-    "angle_of_attack",
-    "oxygen_saturation",
-    "heart_rate",
-    "descent_rate",
-    "fire_detected"
-  ]
+  "domains": {
+    "aerospace": ["altitude", "aoa", "angle_of_attack", "mach", "wing_load"],
+    "biomedical": ["heart_rate", "oxygen_saturation", "blood_pressure"],
+    "mechanical": ["vibration", "torque", "rpm", "temperature"],
+    "electrical": ["current", "voltage", "resistance"],
+    "chemical": ["pressure", "temperature", "ph", "flow_rate"],
+    "environmental": ["humidity", "air_quality", "wind_speed"],
+    "fire": ["temperature", "smoke", "flame_detected", "fire_detected"],
+    "nuclear": ["radiation", "coolant_temp", "neutron_flux"]
+  }
 }

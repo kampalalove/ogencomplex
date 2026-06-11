@@ -71,6 +71,22 @@
       "priority": 35,
       "category": "perception",
       "evidence_source": "manuals/perception_policy_v1.pdf"
+    },
+    {
+      "rule_name": "fire_heat_smoke_combo",
+      "condition_json": "{\"all\":[{\"temperature\":{\"gt\":80}},{\"smoke\":{\"eq\":true}}]}",
+      "action_text": "Heat and smoke detected together. Treat as confirmed fire.",
+      "priority": 100,
+      "category": "fire",
+      "evidence_source": "manuals/thermal_emergency.pdf"
+    },
+    {
+      "rule_name": "chemical_ph_out_of_range",
+      "condition_json": "{\"any\":[{\"ph\":{\"lt\":6.5}},{\"ph\":{\"gt\":8.5}}]}",
+      "action_text": "pH is outside safe operating range.",
+      "priority": 65,
+      "category": "chemical",
+      "evidence_source": null
     }
   ]
 }

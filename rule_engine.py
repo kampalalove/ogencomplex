@@ -72,6 +72,14 @@ def evaluate_condition(payload: dict[str, Any], condition: dict[str, Any]) -> bo
         return evaluate_operation(payload[field], condition["op"], condition.get("value"))
 
     for field, spec in condition.items():
+        if field == "all" and isinstance(spec, list):
+            if not all(evaluate_condition(payload, sub) for sub in spec):
+                return False
+            continue
+        if field == "any" and isinstance(spec, list):
+            if not any(evaluate_condition(payload, sub) for sub in spec):
+                return False
+            continue
         if field not in payload:
             return False
         if isinstance(spec, (bool, int, float, str)):

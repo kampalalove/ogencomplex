@@ -49,8 +49,16 @@ echo "✅ Database ID: $DB_ID"
 # 2. Apply schema and seed rules
 echo "🗄️  Applying D1 schema..."
 npx wrangler d1 execute veritas_kb --file=schema.sql
+if [ -f "schema_upgrade_disciplines.sql" ]; then
+    echo "🗄️  Applying optional schema upgrade for existing databases..."
+    npx wrangler d1 execute veritas_kb --file=schema_upgrade_disciplines.sql || echo "⚠️  Schema upgrade skipped or already applied."
+fi
 echo "📜 Seeding Veritas rules..."
 npx wrangler d1 execute veritas_kb --file=more_rules.sql
+if [ -f "seed_disciplines.sql" ]; then
+    echo "📜 Seeding cross-disciplinary rules..."
+    npx wrangler d1 execute veritas_kb --file=seed_disciplines.sql
+fi
 
 # 3. Create R2 bucket (ignore already-exists failures)
 echo "🪣 Ensuring R2 bucket exists..."
@@ -96,5 +104,6 @@ echo "🌍 Frontend URL: $PAGES_URL"
 echo "🔑 API key: $API_KEY_VALUE"
 echo "🪣 Upload evidence with: npx wrangler r2 object put veritas-assets/manuals/thermal_emergency.pdf --file=./local.pdf"
 echo "➕ Optional extra rules: npx wrangler d1 execute veritas_kb --file=more_rules_extra.sql"
+echo "🎓 Discipline rules: npx wrangler d1 execute veritas_kb --file=seed_disciplines.sql"
 echo "🧪 Test with: curl $WORKER_URL/health"
 echo "🧪 Auth test: curl -H 'X-API-Key: $API_KEY_VALUE' $WORKER_URL/rules"
