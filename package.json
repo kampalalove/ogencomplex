@@ -10,6 +10,8 @@
     "wrangler": "^4.99.0"
   },
   "dependencies": {
+    "pdf-parse": "^2.4.5",
+    "pg": "^8.21.0",
     "qrcode-generator": "^2.0.4"
   }
 }
