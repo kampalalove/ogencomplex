@@ -1,0 +1,6 @@
+name = "ogen-complex"
+main = "worker.js"
+compatibility_date = "2026-06-11"
+
+[vars]
+DEPLOY_SECRET = "your-long-random-secret-here"
