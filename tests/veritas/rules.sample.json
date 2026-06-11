@@ -1,0 +1,36 @@
+{
+  "rules": [
+    {
+      "rule_name": "high_temperature_shutdown",
+      "condition_json": "{\"field\":\"temperature_c\",\"op\":\">\",\"value\":85}",
+      "action_text": "Initiate thermal shutdown and inspect cooling path.",
+      "evidence_source": "manuals/thermal_policy_v1.pdf",
+      "priority": "high",
+      "category": "safety"
+    },
+    {
+      "rule_name": "low_battery_return",
+      "condition_json": "{\"field\":\"battery_pct\",\"op\":\"<\",\"value\":20}",
+      "action_text": "Return to base and preserve reserve power.",
+      "evidence_source": "manuals/power_policy_v1.pdf",
+      "priority": "high",
+      "category": "energy"
+    },
+    {
+      "rule_name": "restricted_zone_stop",
+      "condition_json": "{\"field\":\"zone\",\"op\":\"==\",\"value\":\"restricted\"}",
+      "action_text": "Stop route execution and request operator authorization.",
+      "evidence_source": "manuals/airspace_policy_v1.pdf",
+      "priority": "critical",
+      "category": "compliance"
+    },
+    {
+      "rule_name": "rain_detected_abort",
+      "condition_json": "{\"field\":\"weather_detected\",\"op\":\"contains\",\"value\":\"rain\"}",
+      "action_text": "Abort outdoor mission and protect exposed electronics.",
+      "evidence_source": "manuals/weather_policy_v1.pdf",
+      "priority": "medium",
+      "category": "weather"
+    }
+  ]
+}

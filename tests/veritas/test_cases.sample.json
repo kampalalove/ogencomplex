@@ -1,0 +1,40 @@
+[
+  {
+    "name": "thermal and battery safety actions",
+    "input": {
+      "temperature_c": 92,
+      "battery_pct": 12
+    },
+    "expected_actions": [
+      "Initiate thermal shutdown and inspect cooling path.",
+      "Return to base and preserve reserve power."
+    ]
+  },
+  {
+    "name": "restricted zone strict equality",
+    "input": {
+      "zone": "restricted"
+    },
+    "expected_actions": [
+      "Stop route execution and request operator authorization."
+    ]
+  },
+  {
+    "name": "weather contains rain",
+    "input": {
+      "weather_detected": "light rain approaching"
+    },
+    "expected_actions": [
+      "Abort outdoor mission and protect exposed electronics."
+    ]
+  },
+  {
+    "name": "no false positive for unrestricted zone",
+    "input": {
+      "zone": "unrestricted",
+      "temperature_c": 70,
+      "battery_pct": 50
+    },
+    "expected_actions": []
+  }
+]
