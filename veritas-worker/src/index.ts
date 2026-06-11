@@ -22,7 +22,7 @@ export default {
     const path = url.pathname;
 
     if (path === "/health" && request.method === "GET") {
-      return Response.json({ status: "veritas_online" }, { headers: corsHeaders });
+      return Response.json({ status: "ok", timestamp: new Date().toISOString() }, { headers: corsHeaders });
     }
 
     if (path === "/rule_fields" && request.method === "GET") {
