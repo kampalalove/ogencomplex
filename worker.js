@@ -1,6 +1,8 @@
+import qrcode from 'qrcode-generator';
+
 // ========================
 // OGEN U - Cloudflare Worker (v1.2)
-// Routes: /, /campus, /verify, /cdn/*, /api/deploy, /api/rollback
+// Routes: /, /campus, /verify, /certificate, /graduates, /cdn/*, /graduate, /api/deploy, /api/rollback
 // ========================
 
 export default {
@@ -29,8 +31,32 @@ export default {
       return htmlResponse(VERIFY_HTML);
     }
 
+    // ----- PRINTABLE CERTIFICATE -----
+    if (path === '/certificate') {
+      const root = url.searchParams.get('hash');
+      if (!root) return new Response('Missing ?hash=', { status: 400 });
+      return renderCertificateRoute(root, env, url.origin);
+    }
+
+    // ----- PUBLIC GRADUATE DIRECTORY -----
+    if (path === '/graduates' && req.method === 'GET') {
+      return jsonResponse(await listGraduates(env));
+    }
+
     // ----- CDN ASSETS (same-origin) -----
     if (path.startsWith('/cdn/')) {
+      const qrMatch = path.match(/^\/cdn\/qr\/([^/]+)\.png$/);
+      if (qrMatch) {
+        const root = decodeURIComponent(qrMatch[1]);
+        const verifyUrl = `${url.origin}/verify?hash=${encodeURIComponent(root)}`;
+        return new Response(renderQrPng(verifyUrl), {
+          headers: {
+            'Content-Type': 'image/png',
+            'Cache-Control': 'public, max-age=31536000, immutable',
+          },
+        });
+      }
+
       const asset = path.slice(5);
       const map = {
         'sw.js': { data: SW_JS, type: 'application/javascript; charset=utf-8' },
@@ -50,6 +76,20 @@ export default {
             'Cache-Control': 'public, max-age=31536000, immutable',
           },
         });
+      }
+    }
+
+    // ----- GRADUATE API -----
+    if (path === '/graduate' && req.method === 'POST') {
+      try {
+        const { student } = await req.json();
+        if (typeof student !== 'string' || !student.trim()) {
+          return new Response('Missing student', { status: 400 });
+        }
+
+        return graduateStudent(student.trim(), env, url.origin);
+      } catch (error) {
+        return new Response(`Graduation failed: ${error.message}`, { status: 500 });
       }
     }
 
@@ -422,6 +462,13 @@ const CAMPUS_HTML = `<!DOCTYPE html>
           </div>
         </div>
         <button id="enrollBtn" class="px-6 py-3 bg-green-600 rounded tap-target">✅ Start Verdict Studio</button>
+        <div class="bg-slate-900 border border-slate-700 rounded-lg p-4 mt-4">
+          <h3 class="text-xl font-semibold mb-2">Mint Credential</h3>
+          <p class="text-sm text-slate-400 mb-3">Enter the server ledger student ID to seal the 100-query chain and mint a public root hash.</p>
+          <input id="graduateStudentId" class="w-full p-3 bg-slate-950 border border-slate-700 rounded" placeholder="student ledger ID">
+          <button id="graduateBtn" class="mt-3 px-6 py-3 bg-purple-700 rounded tap-target">🎓 Graduate</button>
+          <p id="graduateStatus" class="text-sm text-slate-300 mt-3"></p>
+        </div>
       </div>
     </div>
     <div id="wordPanel" class="panel">
@@ -652,6 +699,9 @@ const CAMPUS_HTML = `<!DOCTYPE html>
     byId('campusUI').style.display = 'block';
     byId('assignedTrack').innerText = track || localStorage.getItem('ogen_track') || ONBOARDING.tracks.fusion.label;
     byId('thesisReq').innerText = thesis || localStorage.getItem('ogen_thesis') || ONBOARDING.tracks.fusion.thesis;
+    if (byId('graduateStudentId') && localStorage.getItem('ogen_student_hash')) {
+      byId('graduateStudentId').value = localStorage.getItem('ogen_student_hash');
+    }
     renderFusionQuery();
     showPanel('verdict');
   }
@@ -683,6 +733,44 @@ const CAMPUS_HTML = `<!DOCTYPE html>
     a.href = URL.createObjectURL(blob);
     a.download = FUSION_SYLLABUS.presetId + '.json';
     a.click();
+  }
+
+  async function graduateStudent() {
+    const input = byId('graduateStudentId');
+    const status = byId('graduateStatus');
+    const student = (input.value.trim() || localStorage.getItem('ogen_student_hash') || '').trim();
+    if (!student) {
+      status.innerText = 'Enter a student ledger ID first.';
+      return;
+    }
+
+    status.innerText = 'Minting credential...';
+    try {
+      const response = await fetch('/graduate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student }),
+      });
+      const text = await response.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (error) {
+        data = { error: text };
+      }
+
+      if (!response.ok) {
+        status.innerText = data.error || ('Graduation failed: ' + text);
+        return;
+      }
+
+      localStorage.setItem('ogen_degree_root', data.root);
+      status.innerHTML = 'Credential minted: <code>' + data.root + '</code><br>'
+        + '<a class="text-blue-300 underline" href="/verify?hash=' + encodeURIComponent(data.root) + '" target="_blank">Verify degree</a>'
+        + ' · <a class="text-blue-300 underline" href="/certificate?hash=' + encodeURIComponent(data.root) + '" target="_blank">Print certificate</a>';
+    } catch (error) {
+      status.innerText = 'Graduation failed: ' + error.message;
+    }
   }
 
   window.processIntent = processIntent;
@@ -758,6 +846,7 @@ const CAMPUS_HTML = `<!DOCTYPE html>
   document.getElementById('prevFusionQuery').onclick = () => moveFusionQuery(-1);
   document.getElementById('nextFusionQuery').onclick = () => moveFusionQuery(1);
   document.getElementById('exportFusionSyllabus').onclick = exportFusionSyllabus;
+  document.getElementById('graduateBtn').onclick = graduateStudent;
 
   // Fixed image upload & download
   document.getElementById('imageUpload').onchange = e => {
@@ -805,6 +894,7 @@ const CAMPUS_HTML = `<!DOCTYPE html>
 </html>`;
 
 const fallbackKv = new Map();
+const fallbackLedger = new Map();
 
 function validateDeployAuth(env, token, ts) {
   if (token !== env.DEPLOY_SECRET) {
@@ -831,6 +921,54 @@ async function kvPut(env, key, value) {
   fallbackKv.set(key, value);
 }
 
+async function graduateStudent(student, env, origin) {
+  const chain = await ledgerGet(env, `LEDGER:${student}`);
+  if (!chain) return new Response('No ledger found', { status: 404 });
+  if (!Array.isArray(chain.entries) || !chain.entries.length) {
+    return new Response('Malformed ledger chain', { status: 422 });
+  }
+
+  const { replay, summary } = await replayLedgerChain(chain);
+  const last = chain.entries[chain.entries.length - 1];
+  const root = await sha256(last.hash);
+  const graduated = summary.chainIntact && summary.total === 100 && summary.passed === 100;
+
+  if (!graduated) {
+    return jsonResponse({
+      graduated: false,
+      root,
+      passed: summary.passed,
+      total: summary.total,
+      chainIntact: summary.chainIntact,
+    }, { status: 422 });
+  }
+
+  const date = new Date().toISOString();
+  const record = {
+    major: 'Fusion & Energy Sovereignty',
+    completed: true,
+    date,
+    student,
+    root,
+    passed: summary.passed,
+    total: summary.total,
+    verifyUrl: `${origin}/verify?hash=${encodeURIComponent(root)}`,
+    certificateUrl: `${origin}/certificate?hash=${encodeURIComponent(root)}`,
+  };
+
+  await Promise.all([
+    ledgerPut(env, `GRADUATE:${root}`, record),
+    ledgerPut(env, `LEDGER:${root}`, {
+      ...chain,
+      root,
+      graduatedAt: date,
+      sourceStudent: student,
+    }),
+  ]);
+
+  return jsonResponse({ root, graduated: true, ...record });
+}
+
 async function verifyDegree(root, env) {
   const chain = await ledgerGet(env, `LEDGER:${root}`);
 
@@ -842,6 +980,42 @@ async function verifyDegree(root, env) {
     return new Response('Malformed ledger chain', { status: 422 });
   }
 
+  const { replay, summary } = await replayLedgerChain(chain);
+  const graduated = summary.chainIntact && summary.total === 100 && summary.passed === 100;
+
+  return htmlResponse(renderVerifyPage(root, replay, graduated, summary));
+}
+
+async function ledgerGet(env, key) {
+  if (env.LEDGER) {
+    return env.LEDGER.get(key, { type: 'json' });
+  }
+
+  return fallbackLedger.get(key) || null;
+}
+
+async function ledgerPut(env, key, value) {
+  if (env.LEDGER) {
+    await env.LEDGER.put(key, JSON.stringify(value));
+    return;
+  }
+
+  fallbackLedger.set(key, value);
+}
+
+async function ledgerList(env, prefix) {
+  if (env.LEDGER) {
+    return env.LEDGER.list({ prefix });
+  }
+
+  return {
+    keys: [...fallbackLedger.keys()]
+      .filter(name => name.startsWith(prefix))
+      .map(name => ({ name })),
+  };
+}
+
+async function replayLedgerChain(chain) {
   const replay = [];
   let prev = null;
 
@@ -869,17 +1043,35 @@ async function verifyDegree(root, env) {
   const passed = replay.filter(entry => Number(entry.verdict.score) >= 1).length;
   const total = replay.length;
   const chainIntact = replay.every(entry => entry.ok);
-  const graduated = chainIntact && total === 100 && passed === 100;
 
-  return htmlResponse(renderVerifyPage(root, replay, graduated, { passed, total, chainIntact }));
+  return {
+    replay,
+    summary: { passed, total, chainIntact },
+  };
 }
 
-async function ledgerGet(env, key) {
-  if (env.LEDGER) {
-    return env.LEDGER.get(key, { type: 'json' });
+async function renderCertificateRoute(root, env, origin) {
+  const record = await ledgerGet(env, `GRADUATE:${root}`);
+  if (!record) {
+    return htmlResponse(`<h1>No graduation record found for hash: ${escapeHtml(root)}</h1>`);
   }
 
-  return null;
+  return htmlResponse(renderCertificatePage(root, record, origin));
+}
+
+async function listGraduates(env) {
+  const list = await ledgerList(env, 'GRADUATE:');
+  const graduates = [];
+
+  for (const key of list.keys) {
+    const data = await ledgerGet(env, key.name);
+    graduates.push({
+      root: key.name.split(':')[1],
+      ...data,
+    });
+  }
+
+  return graduates.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
 }
 
 function renderVerifyPage(root, replay, graduated, summary) {
@@ -922,6 +1114,170 @@ function renderVerifyPage(root, replay, graduated, summary) {
   `).join('')}
 </body>
 </html>`;
+}
+
+function renderCertificatePage(root, record, origin) {
+  const verifyUrl = `${origin}/verify?hash=${encodeURIComponent(root)}`;
+  const certificateDate = record.date ? new Date(record.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <title>Degree Certificate - ${escapeHtml(root)}</title>
+  <style>
+    body { background:#f8fafc; font-family: Georgia, 'Times New Roman', serif; padding: 3rem; }
+    .cert { background:#fff; border: 4px solid #000; box-shadow:0 24px 80px rgb(15 23 42 / 18%); margin:auto; max-width:900px; padding: 3rem; text-align: center; }
+    h1 { font-size: 2.4rem; margin-bottom: 0.5rem; }
+    h2 { font-size: 1.4rem; font-weight: normal; margin-top: 0; }
+    .root { overflow-wrap:anywhere; }
+    .qr { margin-top: 2rem; }
+    .qr img { image-rendering: pixelated; width: 192px; height: 192px; }
+    .seal { border:2px solid #000; border-radius:999px; display:inline-grid; height:120px; margin-top:2rem; place-items:center; width:120px; }
+    @media print {
+      body { background:#fff; padding:0; }
+      .cert { box-shadow:none; max-width:none; min-height:90vh; }
+    }
+  </style>
+</head>
+<body>
+  <div class="cert">
+    <p>OGEN University</p>
+    <h1>Degree in Fusion & Energy Sovereignty</h1>
+    <h2>This certifies completion of 100 deterministic queries.</h2>
+    <p>Root Hash:</p>
+    <p class="root"><strong>${escapeHtml(root)}</strong></p>
+    <p>Date: ${escapeHtml(certificateDate)}</p>
+    <p>Major: ${escapeHtml(record.major || 'Fusion & Energy Sovereignty')}</p>
+    <div class="qr">
+      <img src="/cdn/qr/${encodeURIComponent(root)}.png" alt="QR to verification page">
+    </div>
+    <p>Verify at: <a href="${escapeHtml(verifyUrl)}">${escapeHtml(verifyUrl)}</a></p>
+    <div class="seal">OGEN<br>SEAL</div>
+  </div>
+</body>
+</html>`;
+}
+
+function renderQrPng(value) {
+  const qr = qrcode(0, 'M');
+  qr.addData(value);
+  qr.make();
+
+  const moduleCount = qr.getModuleCount();
+  const quietZone = 4;
+  const scale = 8;
+  const size = (moduleCount + quietZone * 2) * scale;
+  const scanlines = new Uint8Array(size * (1 + size * 4));
+  let offset = 0;
+
+  for (let y = 0; y < size; y += 1) {
+    scanlines[offset++] = 0;
+    for (let x = 0; x < size; x += 1) {
+      const moduleX = Math.floor(x / scale) - quietZone;
+      const moduleY = Math.floor(y / scale) - quietZone;
+      const dark = moduleX >= 0
+        && moduleY >= 0
+        && moduleX < moduleCount
+        && moduleY < moduleCount
+        && qr.isDark(moduleY, moduleX);
+      const valueByte = dark ? 0 : 255;
+      scanlines[offset++] = valueByte;
+      scanlines[offset++] = valueByte;
+      scanlines[offset++] = valueByte;
+      scanlines[offset++] = 255;
+    }
+  }
+
+  return encodePngRgba(size, size, scanlines);
+}
+
+function encodePngRgba(width, height, rgbaScanlines) {
+  const signature = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
+  const ihdr = new Uint8Array(13);
+  const ihdrView = new DataView(ihdr.buffer);
+  ihdrView.setUint32(0, width);
+  ihdrView.setUint32(4, height);
+  ihdr[8] = 8;
+  ihdr[9] = 6;
+  ihdr[10] = 0;
+  ihdr[11] = 0;
+  ihdr[12] = 0;
+
+  return concatBytes([
+    signature,
+    pngChunk('IHDR', ihdr),
+    pngChunk('IDAT', zlibStore(rgbaScanlines)),
+    pngChunk('IEND', new Uint8Array()),
+  ]);
+}
+
+function pngChunk(type, data) {
+  const typeBytes = new TextEncoder().encode(type);
+  const chunk = new Uint8Array(12 + data.length);
+  const view = new DataView(chunk.buffer);
+  view.setUint32(0, data.length);
+  chunk.set(typeBytes, 4);
+  chunk.set(data, 8);
+  view.setUint32(8 + data.length, crc32(concatBytes([typeBytes, data])));
+  return chunk;
+}
+
+function zlibStore(data) {
+  const blocks = [];
+  let offset = 0;
+
+  while (offset < data.length) {
+    const length = Math.min(65535, data.length - offset);
+    const isFinal = offset + length >= data.length;
+    const block = new Uint8Array(5 + length);
+    block[0] = isFinal ? 1 : 0;
+    block[1] = length & 255;
+    block[2] = (length >> 8) & 255;
+    block[3] = (~length) & 255;
+    block[4] = ((~length) >> 8) & 255;
+    block.set(data.subarray(offset, offset + length), 5);
+    blocks.push(block);
+    offset += length;
+  }
+
+  const adler = adler32(data);
+  const trailer = new Uint8Array(4);
+  const view = new DataView(trailer.buffer);
+  view.setUint32(0, adler);
+
+  return concatBytes([new Uint8Array([0x78, 0x01]), ...blocks, trailer]);
+}
+
+function concatBytes(parts) {
+  const total = parts.reduce((sum, part) => sum + part.length, 0);
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const part of parts) {
+    out.set(part, offset);
+    offset += part.length;
+  }
+  return out;
+}
+
+function crc32(data) {
+  let crc = 0xffffffff;
+  for (const byte of data) {
+    crc ^= byte;
+    for (let i = 0; i < 8; i += 1) {
+      crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1));
+    }
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function adler32(data) {
+  let a = 1;
+  let b = 0;
+  for (const byte of data) {
+    a = (a + byte) % 65521;
+    b = (b + a) % 65521;
+  }
+  return ((b << 16) | a) >>> 0;
 }
 
 function htmlResponse(html) {
