@@ -1,0 +1,68 @@
+[
+  {
+    "name": "high_temp_only",
+    "input": {
+      "temperature": 95
+    },
+    "expected_actions": [
+      "High temperature detected. Check cooling system."
+    ]
+  },
+  {
+    "name": "critical_temp_and_pressure_band",
+    "input": {
+      "temperature": 110,
+      "pressure": 120
+    },
+    "expected_actions": [
+      "High temperature detected. Check cooling system.",
+      "CRITICAL: Shutdown recommended. Immediate inspection required.",
+      "Pressure is within nominal operating band."
+    ]
+  },
+  {
+    "name": "fuel_and_mode",
+    "input": {
+      "fuel_level": 8,
+      "mode": "restricted"
+    },
+    "expected_actions": [
+      "Low fuel. Plan refueling soon.",
+      "Restricted mission mode. Operator approval required."
+    ]
+  },
+  {
+    "name": "critical_fuel_fire_and_sensor_degraded",
+    "input": {
+      "fuel_level": 2,
+      "fire_detected": true,
+      "sensor_status": "fault"
+    },
+    "expected_actions": [
+      "Low fuel. Plan refueling soon.",
+      "CRITICAL FUEL LEVEL. Immediate refuel required.",
+      "ENGINE FIRE. Execute suppression procedure immediately.",
+      "Sensor status is degraded. Switch to redundant sensing and preserve evidence."
+    ]
+  },
+  {
+    "name": "all_operator_heat_and_smoke",
+    "input": {
+      "temperature": 90,
+      "smoke": true
+    },
+    "expected_actions": [
+      "High temperature detected. Check cooling system.",
+      "Heat and smoke detected together. Treat as confirmed fire."
+    ]
+  },
+  {
+    "name": "any_operator_ph_out_of_range",
+    "input": {
+      "ph": 9
+    },
+    "expected_actions": [
+      "pH is outside safe operating range."
+    ]
+  }
+]
