@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>DevPhone — Learn. Build. Launch.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #0c0c0e;
+  --ink2: #131316;
+  --ink3: #1b1b20;
+  --cyan: #00e5c3;
+  --amber: #f5a623;
+  --rose: #ff5c7a;
+  --chalk: #e8e8f0;
+  --muted: #606078;
+  --rule: #2a2a32;
+  --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --sans: 'DM Sans', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { height: 100%; }
+
+body {
+  background:
+    radial-gradient(1200px 600px at 20% -10%, #15151b 0%, transparent 60%),
+    radial-gradient(900px 500px at 110% 10%, #161421 0%, transparent 55%),
+    var(--ink);
+  color: var(--chalk);
+  font-family: var(--sans);
+  height: 100vh;
+  display: grid;
+  place-items: center;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- Phone frame ---------- */
+.phone {
+  position: relative;
+  width: min(420px, 100vw);
+  height: min(880px, 100vh);
+  background: var(--ink2);
+  border: 1px solid var(--rule);
+  border-radius: 38px;
+  box-shadow: 0 40px 120px rgba(0,0,0,.6), inset 0 0 0 6px #050506;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+@media (max-width: 440px) {
+  .phone { width: 100vw; height: 100vh; border-radius: 0; border: none; box-shadow: none; }
+}
+
+/* ---------- Status / header ---------- */
+.statusbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 20px 6px; font-family: var(--mono); font-size: 12px; color: var(--muted);
+}
+.statusbar .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 10px var(--cyan); display:inline-block; margin-right:6px; }
+
+.appbar {
+  padding: 6px 20px 14px; border-bottom: 1px solid var(--rule);
+}
+.brand { display:flex; align-items:center; gap:10px; }
+.logo {
+  width: 30px; height: 30px; border-radius: 9px;
+  background: conic-gradient(from 200deg, var(--cyan), var(--amber), var(--rose), var(--cyan));
+  display:grid; place-items:center; font-weight:700; color:#06060a; font-family:var(--mono); font-size:15px;
+}
+.brand h1 { font-size: 17px; letter-spacing:.2px; }
+.brand h1 span { color: var(--muted); font-weight:500; }
+.tagline { margin-top:6px; font-family:var(--mono); font-size:11px; color:var(--muted); letter-spacing:.5px; }
+
+/* ---------- Screens ---------- */
+.screens { flex:1; overflow-y:auto; -webkit-overflow-scrolling: touch; }
+.screen { display:none; padding: 18px 18px 28px; }
+.screen.active { display:block; animation: fade .25s ease; }
+@keyframes fade { from { opacity:0; transform: translateY(6px);} to {opacity:1; transform:none;} }
+
+.section-title { font-size: 13px; text-transform: uppercase; letter-spacing: 1.4px; color: var(--muted); margin: 4px 2px 12px; font-family: var(--mono); }
+
+.card {
+  background: var(--ink3); border: 1px solid var(--rule); border-radius: 16px;
+  padding: 16px; margin-bottom: 12px;
+}
+.card h3 { font-size: 16px; margin-bottom: 4px; }
+.card p { color: var(--muted); font-size: 13.5px; line-height: 1.5; }
+
+.pill { display:inline-block; font-family:var(--mono); font-size:10.5px; letter-spacing:.5px; padding:3px 8px; border-radius:999px; text-transform:uppercase; }
+.pill.ai { color: var(--cyan); background: rgba(0,229,195,.1); border:1px solid rgba(0,229,195,.3); }
+.pill.biz { color: var(--amber); background: rgba(245,166,35,.1); border:1px solid rgba(245,166,35,.3); }
+.pill.done { color: #7ef0a2; background: rgba(126,240,162,.1); border:1px solid rgba(126,240,162,.3); }
+
+.lesson { cursor:pointer; transition: border-color .15s, transform .1s; }
+.lesson:active { transform: scale(.99); }
+.lesson:hover { border-color: var(--cyan); }
+.lesson .row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.lesson .meta { display:flex; gap:6px; align-items:center; margin-top:10px; }
+
+.progress {
+  height: 8px; background: #25252c; border-radius: 999px; overflow:hidden; margin: 4px 0 2px;
+}
+.progress > span { display:block; height:100%; background: linear-gradient(90deg, var(--cyan), var(--amber)); width:0%; transition: width .4s ease; }
+
+.btn {
+  font-family: var(--mono); font-size: 13px; font-weight:500; cursor:pointer;
+  border: 1px solid var(--rule); background: var(--ink2); color: var(--chalk);
+  padding: 10px 14px; border-radius: 11px; transition: all .15s; display:inline-flex; align-items:center; gap:8px;
+}
+.btn:hover { border-color: var(--cyan); color:#fff; }
+.btn:active { transform: scale(.97); }
+.btn.primary { background: var(--cyan); color:#05110e; border-color: var(--cyan); font-weight:700; }
+.btn.amber { background: var(--amber); color:#1a1304; border-color: var(--amber); font-weight:700; }
+.btn.ghost { background: transparent; }
+.btn.block { width:100%; justify-content:center; }
+.btn-row { display:flex; gap:8px; flex-wrap:wrap; }
+
+label.fld { display:block; font-family:var(--mono); font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; margin: 12px 2px 6px; }
+input.fld, textarea.fld {
+  width:100%; background:#0a0a0d; border:1px solid var(--rule); color:var(--chalk);
+  border-radius:11px; padding:11px 12px; font-family:var(--mono); font-size:13px; resize:vertical;
+}
+input.fld:focus, textarea.fld:focus { outline:none; border-color: var(--cyan); }
+textarea.code { min-height: 170px; line-height:1.5; color:#cfeee7; white-space:pre; }
+
+.preview { width:100%; height:170px; border:1px solid var(--rule); border-radius:11px; background:#fff; margin-top:10px; }
+
+.kpi { display:flex; gap:10px; }
+.kpi .card { flex:1; text-align:center; }
+.kpi .num { font-family:var(--mono); font-size:22px; font-weight:700; }
+.kpi .num.cyan { color: var(--cyan);} .kpi .num.amber{color:var(--amber);} .kpi .num.rose{color:var(--rose);}
+.kpi .lbl { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; margin-top:4px; }
+
+.check { display:flex; align-items:center; gap:10px; padding:11px 4px; border-bottom:1px solid var(--rule); cursor:pointer; }
+.check:last-child { border-bottom:none; }
+.check .box { width:20px; height:20px; border-radius:6px; border:1.5px solid var(--muted); display:grid; place-items:center; flex:none; font-size:13px; color:#06060a; }
+.check.on .box { background: var(--cyan); border-color: var(--cyan); }
+.check.on span { color: var(--muted); text-decoration: line-through; }
+.check span { font-size:14px; }
+
+.entry { display:flex; align-items:center; justify-content:space-between; padding:9px 2px; border-bottom:1px solid var(--rule); font-size:13.5px; }
+.entry:last-child{border-bottom:none;}
+.entry .amt { font-family:var(--mono); color: var(--cyan); }
+.muted-note { color:var(--muted); font-size:12.5px; font-family:var(--mono); }
+
+.log { font-family:var(--mono); font-size:11.5px; color:var(--muted); background:#0a0a0d; border:1px solid var(--rule); border-radius:11px; padding:10px; margin-top:10px; max-height:110px; overflow:auto; white-space:pre-wrap; }
+
+/* ---------- Tab bar ---------- */
+.tabbar {
+  display:flex; border-top:1px solid var(--rule); background: rgba(10,10,13,.85); backdrop-filter: blur(8px);
+}
+.tab {
+  flex:1; background:none; border:none; color:var(--muted); cursor:pointer;
+  padding: 12px 0 16px; font-family:var(--sans); font-size:11px; display:flex; flex-direction:column; align-items:center; gap:5px;
+}
+.tab svg { width:22px; height:22px; }
+.tab.active { color: var(--cyan); }
+.tab.active svg { filter: drop-shadow(0 0 6px rgba(0,229,195,.6)); }
+
+/* lesson detail overlay */
+.detail { position:absolute; inset:0; background:var(--ink2); display:flex; flex-direction:column; transform: translateX(100%); transition: transform .25s ease; z-index:5; }
+.detail.open { transform: none; }
+.detail .dhead { padding:16px 18px; border-bottom:1px solid var(--rule); display:flex; align-items:center; gap:12px; }
+.detail .dbody { padding:18px; overflow-y:auto; flex:1; }
+.detail .dbody p { color:#c7c7d4; line-height:1.65; font-size:14.5px; margin-bottom:12px; }
+.iconbtn { background:none; border:1px solid var(--rule); color:var(--chalk); width:36px; height:36px; border-radius:10px; cursor:pointer; font-size:18px; }
+.speaking { color: var(--amber)!important; border-color: var(--amber)!important; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="statusbar">
+    <span><span class="dot"></span>DevPhone OS</span>
+    <span id="clock">--:--</span>
+  </div>
+  <div class="appbar">
+    <div class="brand">
+      <div class="logo">DP</div>
+      <h1>DevPhone <span>/ founder edition</span></h1>
+    </div>
+    <div class="tagline">// learn · build · launch</div>
+  </div>
+
+  <div class="screens">
+    <!-- ============ LEARN ============ -->
+    <section class="screen active" id="screen-learn">
+      <div class="section-title">Your progress</div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;">
+          <strong id="learn-pct">0%</strong>
+          <span class="muted-note"><span id="learn-done">0</span>/<span id="learn-total">0</span> lessons</span>
+        </div>
+        <div class="progress"><span id="learn-bar"></span></div>
+      </div>
+      <div class="section-title">Lessons</div>
+      <div id="lesson-list"></div>
+    </section>
+
+    <!-- ============ BUILD ============ -->
+    <section class="screen" id="screen-build">
+      <div class="section-title">GitHub</div>
+      <div class="card" id="gh-card">
+        <div id="gh-disconnected">
+          <h3>Connect a repo</h3>
+          <p>Link your GitHub handle to push snippets from the editor.</p>
+          <label class="fld" for="gh-user">GitHub username</label>
+          <input class="fld" id="gh-user" placeholder="octocat" autocomplete="off">
+          <div class="btn-row" style="margin-top:12px;">
+            <button class="btn primary" id="gh-connect">Connect</button>
+          </div>
+        </div>
+        <div id="gh-connected" style="display:none;">
+          <div class="row" style="display:flex;justify-content:space-between;align-items:center;">
+            <div><h3 style="margin:0;">@<span id="gh-name"></span></h3><p class="muted-note" id="gh-repo">devphone-sandbox</p></div>
+            <span class="pill done">linked</span>
+          </div>
+          <button class="btn ghost" id="gh-disconnect" style="margin-top:12px;">Disconnect</button>
+        </div>
+      </div>
+
+      <div class="section-title">Code editor</div>
+      <div class="card">
+        <textarea class="fld code" id="editor" spellcheck="false"></textarea>
+        <div class="btn-row" style="margin-top:12px;">
+          <button class="btn primary" id="run">▶ Run</button>
+          <button class="btn" id="save">Save</button>
+          <button class="btn amber" id="push">⇪ Push</button>
+        </div>
+        <iframe class="preview" id="preview" title="preview"></iframe>
+        <div class="log" id="git-log">$ git log --oneline\n(no commits yet)</div>
+      </div>
+    </section>
+
+    <!-- ============ LAUNCH ============ -->
+    <section class="screen" id="screen-launch">
+      <div class="section-title">Revenue goal</div>
+      <div class="kpi">
+        <div class="card"><div class="num cyan" id="rev-now">$0</div><div class="lbl">Earned</div></div>
+        <div class="card"><div class="num amber" id="rev-goal">$0</div><div class="lbl">Goal</div></div>
+        <div class="card"><div class="num rose" id="rev-pct">0%</div><div class="lbl">Of goal</div></div>
+      </div>
+      <div class="card">
+        <div class="progress"><span id="rev-bar"></span></div>
+        <label class="fld" for="goal-input">Set monthly goal ($)</label>
+        <input class="fld" id="goal-input" type="number" min="0" placeholder="5000">
+        <button class="btn block primary" id="set-goal" style="margin-top:10px;">Update goal</button>
+      </div>
+
+      <div class="section-title">Log revenue</div>
+      <div class="card">
+        <label class="fld" for="rev-label">Source</label>
+        <input class="fld" id="rev-label" placeholder="First paying customer" autocomplete="off">
+        <label class="fld" for="rev-amount">Amount ($)</label>
+        <input class="fld" id="rev-amount" type="number" min="0" placeholder="49">
+        <button class="btn block amber" id="add-rev" style="margin-top:12px;">+ Add revenue</button>
+        <div id="rev-list" style="margin-top:8px;"></div>
+      </div>
+
+      <div class="section-title">Launch checklist</div>
+      <div class="card" id="checklist"></div>
+    </section>
+  </div>
+
+  <!-- lesson detail -->
+  <div class="detail" id="detail">
+    <div class="dhead">
+      <button class="iconbtn" id="detail-back">‹</button>
+      <div style="flex:1;"><strong id="detail-title"></strong></div>
+      <button class="iconbtn" id="detail-audio" title="Play audio">▶</button>
+    </div>
+    <div class="dbody">
+      <div id="detail-meta" style="margin-bottom:14px;"></div>
+      <div id="detail-content"></div>
+      <button class="btn block primary" id="detail-complete" style="margin-top:18px;">Mark complete</button>
+    </div>
+  </div>
+
+  <nav class="tabbar">
+    <button class="tab active" data-screen="learn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6l9-3 9 3-9 3-9-3z"/><path d="M3 6v6l9 3 9-3V6"/></svg>
+      Learn
+    </button>
+    <button class="tab" data-screen="build">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 9l-4 3 4 3"/><path d="M16 9l4 3-4 3"/><path d="M13 5l-2 14"/></svg>
+      Build
+    </button>
+    <button class="tab" data-screen="launch">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 15c0-5 3-10 7-12 4 2 7 7 7 12l-4 2-3-2-3 2-4-2z"/><circle cx="12" cy="9" r="1.6"/></svg>
+      Launch
+    </button>
+  </nav>
+</div>
+
+<script>
+"use strict";
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+const store = {
+  get(k, d){ try { const v = localStorage.getItem("devphone."+k); return v===null?d:JSON.parse(v);} catch(e){ return d; } },
+  set(k, v){ localStorage.setItem("devphone."+k, JSON.stringify(v)); }
+};
+const money = n => "$" + Math.round(n).toLocaleString();
+
+/* ---------------- Clock ---------------- */
+function tick(){ const d=new Date(); $("#clock").textContent = d.toTimeString().slice(0,5); }
+tick(); setInterval(tick, 10000);
+
+/* ---------------- Tab navigation ---------------- */
+$$(".tab").forEach(tab => tab.addEventListener("click", () => {
+  $$(".tab").forEach(t => t.classList.remove("active"));
+  $$(".screen").forEach(s => s.classList.remove("active"));
+  tab.classList.add("active");
+  $("#screen-" + tab.dataset.screen).classList.add("active");
+}));
+
+/* ================= LEARN ================= */
+const LESSONS = [
+  { id:"ai1", cat:"ai", title:"What is an LLM, really?",
+    body:"A large language model predicts the next token given everything before it. That single trick — done at scale across billions of parameters — produces writing, code, and reasoning.\n\nThink of it as autocomplete with a worldview. The art of building with AI is shaping the context you feed in: clear instructions, relevant examples, and tight constraints beat clever prompts every time." },
+  { id:"ai2", cat:"ai", title:"Prompting like an engineer",
+    body:"Treat a prompt like a function signature: define the role, the inputs, the output format, and the failure modes.\n\nGive the model a job title, show one good example, and tell it exactly how to format the answer. When results drift, add a constraint instead of rewriting from scratch." },
+  { id:"ai3", cat:"ai", title:"Shipping AI features safely",
+    body:"Every AI feature needs a fallback. Models hallucinate, time out, and change.\n\nValidate outputs against a schema, cap token spend per request, and always give the user an escape hatch. The teams that win treat the model as an unreliable intern that is brilliant but needs review." },
+  { id:"biz1", cat:"biz", title:"Find a problem worth paying for",
+    body:"A startup is a cure for a pain someone already feels. Before writing code, find ten people who describe the same frustration in their own words.\n\nIf they have already hacked together a spreadsheet or paid for a bad tool, you have found a market. Build for the people who are bleeding, not the people who are merely curious." },
+  { id:"biz2", cat:"biz", title:"Pricing your first product",
+    body:"Price on value, not on cost. Customers compare your price to the pain you remove, not to your hosting bill.\n\nStart higher than feels comfortable; discounting is easy, raising prices is hard. One simple tier that solves the whole problem beats a confusing menu." },
+  { id:"biz3", cat:"biz", title:"Your first 10 customers",
+    body:"The first ten customers come from conversations, not campaigns. Go where your users already gather and be genuinely useful.\n\nDo things that do not scale: onboard each customer by hand, fix their problems personally, and turn their feedback into your roadmap. Scale comes later — proof comes first." },
+];
+
+let completed = store.get("learn.completed", []);
+
+function renderLessons(){
+  const list = $("#lesson-list"); list.innerHTML = "";
+  LESSONS.forEach(L => {
+    const done = completed.includes(L.id);
+    const el = document.createElement("div");
+    el.className = "card lesson";
+    el.innerHTML = `
+      <div class="row"><h3>${L.title}</h3></div>
+      <div class="meta">
+        <span class="pill ${L.cat}">${L.cat==="ai"?"AI":"Business"}</span>
+        ${done?'<span class="pill done">✓ done</span>':''}
+        <span class="muted-note" style="margin-left:auto;">audio ▶</span>
+      </div>`;
+    el.addEventListener("click", () => openLesson(L.id));
+    list.appendChild(el);
+  });
+  const total = LESSONS.length, n = completed.length, pct = Math.round(n/total*100);
+  $("#learn-total").textContent = total; $("#learn-done").textContent = n;
+  $("#learn-pct").textContent = pct + "%"; $("#learn-bar").style.width = pct + "%";
+}
+
+let currentLesson = null;
+function openLesson(id){
+  const L = LESSONS.find(x => x.id === id); currentLesson = L;
+  $("#detail-title").textContent = L.title;
+  $("#detail-meta").innerHTML = `<span class="pill ${L.cat}">${L.cat==="ai"?"AI":"Business"}</span>`;
+  $("#detail-content").innerHTML = L.body.split("\n\n").map(p=>`<p>${p}</p>`).join("");
+  const done = completed.includes(id);
+  $("#detail-complete").textContent = done ? "✓ Completed" : "Mark complete";
+  $("#detail-complete").disabled = false;
+  $("#detail").classList.add("open");
+}
+$("#detail-back").addEventListener("click", () => { stopAudio(); $("#detail").classList.remove("open"); });
+$("#detail-complete").addEventListener("click", () => {
+  if (!currentLesson) return;
+  if (!completed.includes(currentLesson.id)) completed.push(currentLesson.id);
+  store.set("learn.completed", completed);
+  renderLessons();
+  $("#detail-complete").textContent = "✓ Completed";
+});
+
+/* ----- Audio support (Web Speech API) ----- */
+let speaking = false;
+function stopAudio(){
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  speaking = false; $("#detail-audio").classList.remove("speaking"); $("#detail-audio").textContent = "▶";
+}
+$("#detail-audio").addEventListener("click", () => {
+  if (!("speechSynthesis" in window)) { alert("Audio not supported on this browser."); return; }
+  if (speaking) { stopAudio(); return; }
+  const u = new SpeechSynthesisUtterance((currentLesson?.title||"") + ". " + (currentLesson?.body||""));
+  u.rate = 1; u.onend = stopAudio;
+  speaking = true; $("#detail-audio").classList.add("speaking"); $("#detail-audio").textContent = "❚❚";
+  window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
+});
+
+/* ================= BUILD ================= */
+const DEFAULT_CODE = `<!-- Edit me, then press Run -->
+<h2 style="font-family:sans-serif;color:#00a98a">
+  Hello from DevPhone 👋
+</h2>
+<button onclick="alert('It works!')">Tap me</button>`;
+
+const editor = $("#editor");
+editor.value = store.get("build.code", DEFAULT_CODE);
+
+function runCode(){ $("#preview").srcdoc = editor.value; }
+$("#run").addEventListener("click", runCode);
+$("#save").addEventListener("click", () => { store.set("build.code", editor.value); flash($("#save"), "Saved ✓"); });
+
+function flash(btn, txt){ const o=btn.textContent; btn.textContent=txt; setTimeout(()=>btn.textContent=o, 1200); }
+
+/* ----- GitHub (mock integration) ----- */
+let gh = store.get("build.github", null);
+let commits = store.get("build.commits", []);
+function renderGit(){
+  if (gh){
+    $("#gh-disconnected").style.display="none";
+    $("#gh-connected").style.display="block";
+    $("#gh-name").textContent = gh;
+  } else {
+    $("#gh-disconnected").style.display="block";
+    $("#gh-connected").style.display="none";
+  }
+  $("#push").disabled = !gh;
+  $("#git-log").textContent = commits.length
+    ? commits.map(c => c.sha + "  " + c.msg).join("\n")
+    : "$ git log --oneline\n(no commits yet)";
+}
+$("#gh-connect").addEventListener("click", () => {
+  const u = $("#gh-user").value.trim().replace(/^@/, "");
+  if (!u) { $("#gh-user").focus(); return; }
+  gh = u; store.set("build.github", gh); renderGit();
+});
+$("#gh-disconnect").addEventListener("click", () => { gh=null; store.set("build.github", null); renderGit(); });
+$("#push").addEventListener("click", () => {
+  if (!gh) return;
+  store.set("build.code", editor.value);
+  const sha = Math.random().toString(16).slice(2, 9);
+  commits.unshift({ sha, msg: "Update devphone-sandbox (" + new Date().toLocaleTimeString() + ")" });
+  commits = commits.slice(0, 6); store.set("build.commits", commits);
+  renderGit(); flash($("#push"), "Pushed ✓");
+});
+
+/* ================= LAUNCH ================= */
+let goal = store.get("launch.goal", 5000);
+let entries = store.get("launch.entries", []);
+const CHECK_ITEMS = [
+  "Validate the problem with 10 users",
+  "Build a working MVP",
+  "Set up payments",
+  "Publish a landing page",
+  "Onboard your first paying customer",
+  "Share your launch publicly",
+];
+let checks = store.get("launch.checks", {});
+
+function renderLaunch(){
+  const earned = entries.reduce((s,e)=>s+e.amount, 0);
+  const pct = goal>0 ? Math.min(100, Math.round(earned/goal*100)) : 0;
+  $("#rev-now").textContent = money(earned);
+  $("#rev-goal").textContent = money(goal);
+  $("#rev-pct").textContent = pct + "%";
+  $("#rev-bar").style.width = pct + "%";
+  $("#goal-input").placeholder = goal;
+
+  const list = $("#rev-list");
+  list.innerHTML = entries.length ? "" : '<div class="muted-note" style="padding:6px 2px;">No revenue logged yet.</div>';
+  entries.forEach((e, i) => {
+    const row = document.createElement("div");
+    row.className = "entry";
+    row.innerHTML = `<span>${e.label}</span><span><span class="amt">${money(e.amount)}</span> <button class="iconbtn" data-i="${i}" style="width:24px;height:24px;font-size:13px;line-height:1;">×</button></span>`;
+    list.appendChild(row);
+  });
+  $$("#rev-list .iconbtn").forEach(b => b.addEventListener("click", () => {
+    entries.splice(+b.dataset.i, 1); store.set("launch.entries", entries); renderLaunch();
+  }));
+
+  const cl = $("#checklist"); cl.innerHTML = "";
+  CHECK_ITEMS.forEach((label, i) => {
+    const on = !!checks[i];
+    const row = document.createElement("div");
+    row.className = "check" + (on?" on":"");
+    row.innerHTML = `<div class="box">${on?"✓":""}</div><span>${label}</span>`;
+    row.addEventListener("click", () => { checks[i] = !checks[i]; store.set("launch.checks", checks); renderLaunch(); });
+    cl.appendChild(row);
+  });
+}
+$("#set-goal").addEventListener("click", () => {
+  const v = parseFloat($("#goal-input").value);
+  if (!isNaN(v) && v>=0) { goal = v; store.set("launch.goal", goal); $("#goal-input").value=""; renderLaunch(); }
+});
+$("#add-rev").addEventListener("click", () => {
+  const label = $("#rev-label").value.trim() || "Revenue";
+  const amount = parseFloat($("#rev-amount").value);
+  if (isNaN(amount) || amount<=0) { $("#rev-amount").focus(); return; }
+  entries.unshift({ label, amount }); store.set("launch.entries", entries);
+  $("#rev-label").value=""; $("#rev-amount").value=""; renderLaunch();
+});
+
+/* ---------------- init ---------------- */
+renderLessons();
+renderGit();
+runCode();
+renderLaunch();
+</script>
+</body>
+</html>
