@@ -521,16 +521,28 @@ function playLesson(i){
   cancelSpeech();
   resetDetailAudioBtn();
   const myToken = ++playToken;
+  audio.startedAt = Date.now();
   const text = L.title + ". " + L.body;
   const u = new SpeechSynthesisUtterance(text);
   u.rate = 1; u.pitch = 1;
-  u.onend = () => { if (myToken === playToken) handleLessonEnd(); };
-  u.onerror = () => { if (myToken === playToken) handleLessonEnd(); };
+  u.onend = () => onSpeechDone(myToken);
+  u.onerror = () => onSpeechDone(myToken);
   activeUtter = u;
   audio.playing = true;
   try { window.speechSynthesis.speak(u); } catch(e){}
-  scheduleFallback(myToken, estimateMs(text));   // advance even if onend never fires (silent env)
+  // Pace auto-advance with a fallback timer. It defers while speech is genuinely
+  // playing, so it never cuts off real narration; it only drives advancement when
+  // no audio is produced (e.g. a browser/environment with no installed voices).
+  scheduleFallback(myToken, Math.min(estimateMs(text), 5000));
   updatePlayerUI();
+}
+
+function onSpeechDone(token){
+  if (token !== playToken) return;
+  // A near-instant end means speech never actually played (no voice available);
+  // ignore it and let the paced fallback timer advance instead of cascading.
+  if (Date.now() - audio.startedAt < 1200) return;
+  handleLessonEnd();
 }
 
 function handleLessonEnd(){
