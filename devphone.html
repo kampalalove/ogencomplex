@@ -187,11 +187,13 @@ textarea.code { min-height: 170px; line-height:1.5; color:#cfeee7; white-space:p
 .pb-sub { display:block; font-family:var(--mono); font-size:11px; color:var(--muted); margin-top:2px; }
 .pb-pulse { width:6px; height:6px; border-radius:50%; background:var(--cyan); box-shadow:0 0 8px var(--cyan); display:inline-block; margin-right:6px; vertical-align:middle; animation: pulse 1.1s infinite; }
 @keyframes pulse { 0%,100%{opacity:.25;} 50%{opacity:1;} }
-.pb-controls { display:flex; align-items:center; gap:2px; flex:none; }
-.pb-btn { background:none; border:none; color:var(--chalk); font-size:16px; cursor:pointer; width:34px; height:34px; border-radius:9px; display:grid; place-items:center; }
-.pb-btn:hover { background: var(--ink3); color:#fff; }
+.pb-controls { display:flex; align-items:center; gap:6px; flex:none; }
+.pb-btn { background: var(--ink3); border:1px solid var(--rule); color:var(--chalk); font-size:17px; cursor:pointer; width:42px; height:42px; border-radius:11px; display:grid; place-items:center; }
+.pb-btn:hover { border-color: var(--cyan); color:#fff; }
 .pb-btn:active { transform: scale(.94); }
-.pb-main { color: var(--cyan); font-size:20px; }
+.pb-main { color: var(--cyan); font-size:21px; border-color: rgba(0,229,195,.4); }
+#pb-close { margin-left: 8px; color: var(--muted); }
+#pb-close:hover { color: var(--rose); border-color: var(--rose); }
 
 .modal-backdrop { position:absolute; inset:0; background:rgba(4,4,6,.72); z-index:20; display:grid; place-items:center; padding:24px; animation: fade .2s ease; }
 .modal-backdrop.hidden { display:none; }
@@ -468,7 +470,7 @@ $("#detail-audio").addEventListener("click", () => {
 /* ----- Audio mode: full-session player ----- */
 const audio = { active:false, playing:false, index:0, mode:"continuous", endTime:null, startTime:0, fallbackT:null, timerT:null };
 let playToken = 0;
-const AUTO_ADVANCE_MS = 5500;   // pace when no TTS voice is available (silent reader mode)
+const AUTO_ADVANCE_MS = 9000;   // pace when no TTS voice is available (silent reader mode)
 if ("speechSynthesis" in window) { try { window.speechSynthesis.getVoices(); window.speechSynthesis.onvoiceschanged = () => {}; } catch(e){} }
 function voicesAvailable(){
   try { return ("speechSynthesis" in window) && window.speechSynthesis.getVoices().length > 0; }
@@ -580,9 +582,14 @@ function stopSession(){ if (audio.active) finishSession(); }
 
 function updatePlayerUI(){ pbToggle.textContent = audio.playing ? "⏸" : "▶"; }
 
+function skip(delta){
+  const wasPlaying = audio.playing;
+  playLesson(audio.index + delta);
+  if (!wasPlaying) pausePlayback();   // scrubbing while paused should stay paused
+}
 pbToggle.addEventListener("click", () => { audio.playing ? pausePlayback() : resumePlayback(); });
-$("#pb-prev").addEventListener("click", () => playLesson(audio.index - 1));
-$("#pb-next").addEventListener("click", () => playLesson(audio.index + 1));
+$("#pb-prev").addEventListener("click", () => skip(-1));
+$("#pb-next").addEventListener("click", () => skip(1));
 $("#pb-close").addEventListener("click", finishSession);
 
 /* Chrome truncates utterances longer than ~15s; nudge the queue while playing. */
