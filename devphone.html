@@ -468,6 +468,12 @@ $("#detail-audio").addEventListener("click", () => {
 /* ----- Audio mode: full-session player ----- */
 const audio = { active:false, playing:false, index:0, mode:"continuous", endTime:null, startTime:0, fallbackT:null, timerT:null };
 let playToken = 0;
+const AUTO_ADVANCE_MS = 5500;   // pace when no TTS voice is available (silent reader mode)
+if ("speechSynthesis" in window) { try { window.speechSynthesis.getVoices(); window.speechSynthesis.onvoiceschanged = () => {}; } catch(e){} }
+function voicesAvailable(){
+  try { return ("speechSynthesis" in window) && window.speechSynthesis.getVoices().length > 0; }
+  catch(e){ return false; }
+}
 const pbar = $("#player"), pbTitle = $("#pb-title"), pbPos = $("#pb-pos"), pbTimer = $("#pb-timer"), pbToggle = $("#pb-toggle");
 
 $("#open-session").addEventListener("click", () => $("#session-backdrop").classList.remove("hidden"));
@@ -485,9 +491,10 @@ function startSession(mode){
   audio.startTime = Date.now();
   audio.endTime = (mode === "continuous") ? null : Date.now() + parseInt(mode, 10) * 60 * 1000;
   audio.active = true;
+  audio.index = 0;
   pbar.classList.remove("hidden");
   startTimerLoop();
-  playLesson(audio.index || 0);
+  playLesson(0);
 }
 
 function fmt(ms){ ms = Math.max(0, ms|0); const s = Math.floor(ms/1000); return String(Math.floor(s/60)).padStart(2,"0") + ":" + String(s%60).padStart(2,"0"); }
@@ -521,28 +528,26 @@ function playLesson(i){
   cancelSpeech();
   resetDetailAudioBtn();
   const myToken = ++playToken;
-  audio.startedAt = Date.now();
   const text = L.title + ". " + L.body;
-  const u = new SpeechSynthesisUtterance(text);
-  u.rate = 1; u.pitch = 1;
-  u.onend = () => onSpeechDone(myToken);
-  u.onerror = () => onSpeechDone(myToken);
-  activeUtter = u;
   audio.playing = true;
-  try { window.speechSynthesis.speak(u); } catch(e){}
-  // Pace auto-advance with a fallback timer. It defers while speech is genuinely
-  // playing, so it never cuts off real narration; it only drives advancement when
-  // no audio is produced (e.g. a browser/environment with no installed voices).
-  scheduleFallback(myToken, Math.min(estimateMs(text), 5000));
-  updatePlayerUI();
-}
 
-function onSpeechDone(token){
-  if (token !== playToken) return;
-  // A near-instant end means speech never actually played (no voice available);
-  // ignore it and let the paced fallback timer advance instead of cascading.
-  if (Date.now() - audio.startedAt < 1200) return;
-  handleLessonEnd();
+  if (voicesAvailable()) {
+    // Real narration: advance when speech actually ends. The fallback (at ~2x the
+    // estimated duration) is only a safety net if onend/onerror never fires; it
+    // defers while speech is still playing, so it can't cut narration short.
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 1; u.pitch = 1;
+    u.onend = () => { if (myToken === playToken) handleLessonEnd(); };
+    u.onerror = () => { if (myToken === playToken) handleLessonEnd(); };
+    activeUtter = u;
+    try { window.speechSynthesis.speak(u); } catch(e){}
+    scheduleFallback(myToken, estimateMs(text) * 2);
+  } else {
+    // No TTS voice available (e.g. headless/test environment): fall back to a
+    // timed auto-advancing reader so the session still progresses at a sane pace.
+    scheduleFallback(myToken, AUTO_ADVANCE_MS);
+  }
+  updatePlayerUI();
 }
 
 function handleLessonEnd(){
