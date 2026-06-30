@@ -1,0 +1,33 @@
+{
+  "timestamp": "2026-06-30T16:53:56.482Z",
+  "version": "1.0.0",
+  "checks": [
+    {
+      "name": "RequiredFile",
+      "status": "FAIL",
+      "message": "Missing package.json",
+      "target": "package.json"
+    },
+    {
+      "name": "RequiredFile",
+      "status": "FAIL",
+      "message": "Missing tsconfig.json",
+      "target": "tsconfig.json"
+    },
+    {
+      "name": "EnvVar",
+      "status": "PASS",
+      "message": "Env NODE_ENV present"
+    },
+    {
+      "name": "NodeVersion",
+      "status": "FAIL",
+      "message": "Node version v24.16.0 not allowed"
+    }
+  ],
+  "summary": {
+    "total": 4,
+    "passed": 1,
+    "failed": 3
+  }
+}

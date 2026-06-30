@@ -1,0 +1,1 @@
+{"name":"devops-templates","version":"1.0.0","type":"commonjs","scripts":{"build":"echo Building..."},"devDependencies":{"@types/node":"^26.0.1","tsx":"^4.22.4","typescript":"^6.0.3"}}
