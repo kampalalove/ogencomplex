@@ -1,0 +1,8 @@
+name = "veritas-engine"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "veritas_kb"
+database_id = "105bd332-1630-427e-b622-fc06b89b4ea0"

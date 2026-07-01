@@ -1,0 +1,21 @@
+{
+  "name": "veritas-engine",
+  "version": "1.0.0",
+  "description": "Veritas Decision Engine — Cloudflare Worker + D1 advisory system",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "npx wrangler dev",
+    "deploy": "npx wrangler deploy",
+    "deploy:pages": "npx wrangler pages deploy public --project-name veritas-ui",
+    "db:create": "npx wrangler d1 create veritas_kb",
+    "db:schema": "npx wrangler d1 execute veritas_kb --file=sql/schema.sql",
+    "db:seed": "npx wrangler d1 execute veritas_kb --file=sql/more_rules.sql",
+    "db:schema:local": "npx wrangler d1 execute veritas_kb --local --file=sql/schema.sql",
+    "db:seed:local": "npx wrangler d1 execute veritas_kb --local --file=sql/more_rules.sql"
+  },
+  "keywords": ["cloudflare", "workers", "d1", "decision-engine"],
+  "license": "MIT",
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}

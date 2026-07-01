@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS decision_rules (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  rule TEXT NOT NULL UNIQUE,
+  condition TEXT NOT NULL,
+  action TEXT NOT NULL,
+  priority TEXT NOT NULL DEFAULT 'low'
+);
