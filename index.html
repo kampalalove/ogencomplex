@@ -325,7 +325,7 @@
       <div class="card" id="jwt-decoder">
         <h2>🔑 JWT Decoder</h2>
         <p class="subtle">Paste a token to decode claims and verify Ed25519 signatures when supported.</p>
-        <textarea id="jwt-input">******
+        <textarea id="jwt-input" placeholder="Paste an EdDSA JWT here to inspect its header, claims, and signature status."></textarea>
         <div class="actions">
           <button onclick="decodeJWT()">Decode</button>
           <button onclick="clearJWT()">Clear</button>
