@@ -2,3 +2,4 @@ node_modules/
 dist/
 receipts/*.json
 !receipts/README.md
+.env
