@@ -58,7 +58,7 @@ Expected response:
 {
   "matches": [
     { "rule": "Power fluctuation", "action": "Switch to backup power and test regulator.", "priority": "high" },
-    { "rule": "Expired calibration", "action": "Redo calibration immediately; flag as non‑compliant.", "priority": "high" }
+    { "rule": "Expired calibration", "action": "Redo calibration immediately; flag as non-compliant.", "priority": "high" }
   ]
 }
 ```

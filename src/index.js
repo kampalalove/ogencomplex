@@ -17,7 +17,7 @@ export default {
     const apiKey = env.API_KEY;
     if (apiKey) {
       const authHeader = request.headers.get('Authorization');
-      if (authHeader !== `****** {
+      if (authHeader !== 'Bearer ' + apiKey) {
         return Response.json(
           { error: 'Unauthorized' },
           { status: 401, headers: corsHeaders }
