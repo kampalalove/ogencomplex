@@ -2,7 +2,8 @@ import os
 import json
 import hashlib
 import logging
-from datetime import datetime
+import importlib
+from datetime import datetime, timezone
 from flask import Flask, request, jsonify, render_template
 
 # Configure logging
@@ -66,7 +67,7 @@ def TandemMeal(task, context=None):
     
     # 4. Log to encrypted audit
     log_entry = {
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "task": task,
         "result": tech_result,
         "score": judgment["score"],
@@ -80,7 +81,7 @@ def TandemMeal(task, context=None):
 def load_domain_modules():
     for mod_name in ["law", "medicine", "hardware", "economics"]:
         try:
-            mod = __import__(f"src.{mod_name}", fromlist=["register"])
+            mod = importlib.import_module(f"src.{mod_name}")
             if hasattr(mod, "register"):
                 funcs = mod.register()
                 for name, fn, category in funcs:
@@ -112,7 +113,7 @@ def process_task():
 
 @app.route('/api/audit', methods=['GET'])
 def get_audit():
-    # Return last 50 logs (simulated encryption)
+    # Return last 50 logs (plaintext in-memory storage for demo)
     return jsonify({"logs": AUDIT_LOG[-50:]})
 
 if __name__ == '__main__':
