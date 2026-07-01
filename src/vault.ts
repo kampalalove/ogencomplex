@@ -20,7 +20,14 @@ export interface SignedContract {
   hash: string;
 }
 
-const VAULT_SECRET = process.env.VAULT_SECRET || crypto.randomBytes(32).toString('hex');
+const VAULT_SECRET = process.env.VAULT_SECRET || (() => {
+  const generated = crypto.randomBytes(32).toString('hex');
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('VAULT_SECRET environment variable is required in production');
+  }
+  console.warn('[vault] WARNING: No VAULT_SECRET set. Using ephemeral secret — receipts will not verify across restarts.');
+  return generated;
+})();
 const RECEIPTS_DIR = path.resolve(__dirname, '..', 'receipts');
 
 function ensureReceiptsDir(): void {
