@@ -3,26 +3,839 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>The OGEN Complex</title>
+  <title>Sovereign Ledger Console</title>
   <style>
+    :root {
+      color-scheme: dark;
+      --bg: #020617;
+      --panel: #0f172a;
+      --panel-soft: #1e293b;
+      --border: #334155;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --good: #4ade80;
+      --warn: #facc15;
+      --bad: #f87171;
+    }
+
+    * { box-sizing: border-box; }
+
     body {
       margin: 0;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
       font-family: Arial, sans-serif;
-      background: #ffffff;
-      color: #000000;
+      background:
+        radial-gradient(circle at top, rgba(56, 189, 248, 0.12), transparent 30%),
+        var(--bg);
+      color: var(--text);
     }
-    main { text-align: center; }
-    h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
-    p { font-size: 1.2rem; opacity: 0.7; }
+
+    .shell {
+      width: min(1200px, calc(100% - 2rem));
+      margin: 0 auto;
+      padding: 2rem 0 3rem;
+    }
+
+    .hero {
+      margin-bottom: 1.5rem;
+      padding: 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(14px);
+    }
+
+    .hero h1 {
+      margin: 0 0 0.5rem;
+      font-size: clamp(2rem, 4vw, 3rem);
+    }
+
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 60rem;
+      line-height: 1.5;
+    }
+
+    .config-grid,
+    .grid {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .config-grid {
+      margin-top: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      align-items: end;
+    }
+
+    .grid {
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1rem;
+      box-shadow: 0 16px 36px rgba(15, 23, 42, 0.24);
+    }
+
+    h2 {
+      margin: 0 0 0.35rem;
+      font-size: 1.15rem;
+    }
+
+    .subtle,
+    label,
+    .small {
+      color: var(--muted);
+    }
+
+    .small {
+      font-size: 0.8rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.35rem;
+      font-size: 0.85rem;
+    }
+
+    input,
+    textarea,
+    button {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      font: inherit;
+    }
+
+    input,
+    textarea {
+      background: #020617;
+      color: var(--text);
+      padding: 0.75rem 0.85rem;
+    }
+
+    textarea {
+      min-height: 112px;
+      resize: vertical;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    button {
+      background: linear-gradient(135deg, var(--accent), #2563eb);
+      color: white;
+      padding: 0.75rem 0.95rem;
+      cursor: pointer;
+      font-weight: 700;
+      transition: transform 0.12s ease, opacity 0.12s ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:disabled { opacity: 0.55; cursor: wait; transform: none; }
+
+    .actions {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      margin-top: 0.75rem;
+    }
+
+    .actions button,
+    .actions input {
+      width: auto;
+      flex: 1 1 140px;
+    }
+
+    .status {
+      margin-bottom: 1rem;
+      padding: 0.85rem 1rem;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--muted);
+    }
+
+    .status.good { border-color: rgba(74, 222, 128, 0.35); color: #bbf7d0; }
+    .status.warn { border-color: rgba(250, 204, 21, 0.35); color: #fde68a; }
+    .status.bad { border-color: rgba(248, 113, 113, 0.35); color: #fecaca; }
+
+    pre {
+      margin: 0.75rem 0 0;
+      padding: 0.9rem;
+      overflow: auto;
+      max-height: 280px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: #020617;
+      color: #cbd5e1;
+      font-size: 0.82rem;
+    }
+
+    .health-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 0.75rem;
+      margin: 0.75rem 0;
+    }
+
+    .health-stat {
+      background: var(--panel-soft);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.85rem;
+    }
+
+    .health-stat .label {
+      display: block;
+      margin-bottom: 0.25rem;
+      color: var(--muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .health-stat .value {
+      display: block;
+      font-weight: 700;
+      word-break: break-word;
+    }
+
+    #audit-table-container {
+      max-height: 340px;
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #020617;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+
+    th,
+    td {
+      padding: 0.75rem;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      background: var(--panel-soft);
+      z-index: 1;
+    }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      word-break: break-all;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.3rem 0.65rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      border: 1px solid var(--border);
+      background: rgba(30, 41, 59, 0.9);
+      color: var(--muted);
+    }
+
+    @media (max-width: 720px) {
+      .shell {
+        width: min(100% - 1rem, 1200px);
+      }
+    }
   </style>
 </head>
 <body>
-  <main>
-    <h1>The OGEN Complex</h1>
-    <p>Coming Soon</p>
-  </main>
+  <div class="shell">
+    <section class="hero">
+      <span class="pill">Sovereign Ledger Console</span>
+      <h1>Operate the live ledger from one page.</h1>
+      <p>
+        Connect to the deployed worker, inspect its public key, sign in, anchor provenance hashes,
+        decode tokens, review the console audit chain, and monitor ledger health without backend changes.
+      </p>
+      <div class="config-grid">
+        <div>
+          <label for="base-url">Ledger Base URL</label>
+          <input id="base-url" type="url" value="https://sovereign-ledger.mubiru-moses-matt.workers.dev">
+        </div>
+        <div>
+          <label for="default-system-id">Default System ID</label>
+          <input id="default-system-id" type="text" value="veritas-mechanica">
+        </div>
+        <div class="actions">
+          <button id="save-config-btn" onclick="saveConfig()">Save Config</button>
+          <button onclick="refreshAll()">Refresh All</button>
+        </div>
+      </div>
+    </section>
+
+    <div id="status-banner" class="status">Ready.</div>
+
+    <section class="grid">
+      <div class="card">
+        <h2>🌐 Public Key</h2>
+        <p class="subtle">Fetch the ledger identity published at <span class="mono">/.well-known/ledger.pub</span>.</p>
+        <div class="actions">
+          <button id="fetch-key-btn" onclick="fetchPublicKey()">Fetch Public Key</button>
+          <button onclick="copyOutput('public-key-output')">Copy</button>
+        </div>
+        <pre id="public-key-output">No public key loaded.</pre>
+      </div>
+
+      <div class="card">
+        <h2>🔐 Login</h2>
+        <p class="subtle">Authenticate against the live worker and persist the returned token locally.</p>
+        <label for="email-input">Email</label>
+        <input id="email-input" type="email" value="test@example.com">
+        <label for="device-input" style="margin-top:0.75rem;">Device ID</label>
+        <input id="device-input" type="text" value="device-001">
+        <div class="actions">
+          <button id="login-btn" onclick="login()">Login</button>
+          <button onclick="clearToken()">Clear Token</button>
+        </div>
+        <pre id="login-output">No login response yet.</pre>
+      </div>
+
+      <div class="card">
+        <h2>⚓ Anchor Data</h2>
+        <p class="subtle">Seal a final provenance hash using the deployed <span class="mono">/v1/data/anchor</span> endpoint.</p>
+        <label for="hash-input">Final Hash</label>
+        <input id="hash-input" type="text" value="feeb7221">
+        <label for="count-input" style="margin-top:0.75rem;">Observation Count</label>
+        <input id="count-input" type="number" min="1" value="908">
+        <div class="actions">
+          <button id="anchor-btn" onclick="anchorData()">Anchor Hash</button>
+          <button onclick="fillFromLatestAnchor()">Use Last Anchor</button>
+        </div>
+        <pre id="anchor-output">No anchor submitted yet.</pre>
+      </div>
+
+      <div class="card" id="jwt-decoder">
+        <h2>🔑 JWT Decoder</h2>
+        <p class="subtle">Paste a token to decode claims and verify Ed25519 signatures when supported.</p>
+        <textarea id="jwt-input">******
+        <div class="actions">
+          <button onclick="decodeJWT()">Decode</button>
+          <button onclick="clearJWT()">Clear</button>
+        </div>
+        <pre id="jwt-output">Awaiting input...</pre>
+      </div>
+
+      <div class="card" id="audit-log">
+        <h2>📋 Audit Log</h2>
+        <p class="subtle">Client-side tamper-evident action history with search and filter.</p>
+        <div class="actions">
+          <input id="audit-search" type="text" placeholder="Search action, hash, or data" oninput="loadAuditLog()">
+          <button onclick="loadAuditLog()">Refresh</button>
+          <button onclick="clearAuditLog()">Clear</button>
+        </div>
+        <div id="audit-table-container">
+          <table id="audit-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Timestamp</th>
+                <th>Action</th>
+                <th>Hash</th>
+              </tr>
+            </thead>
+            <tbody id="audit-body">
+              <tr><td colspan="4" class="small">No entries loaded.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card" id="health-panel">
+        <h2>💚 Ledger Health</h2>
+        <p class="subtle">Combines worker health checks with local audit-chain integrity.</p>
+        <div class="health-grid">
+          <div class="health-stat"><span class="label">Chain Status</span><span id="health-chain" class="value" style="color:var(--good);">✅ Valid</span></div>
+          <div class="health-stat"><span class="label">Entries</span><span id="health-count" class="value">0</span></div>
+          <div class="health-stat"><span class="label">Last Hash</span><span id="health-last" class="value mono">—</span></div>
+          <div class="health-stat"><span class="label">Last Anchor</span><span id="health-anchor-time" class="value">—</span></div>
+          <div class="health-stat"><span class="label">Worker Status</span><span id="health-worker" class="value">Unknown</span></div>
+          <div class="health-stat"><span class="label">Public Key</span><span id="health-key" class="value">Not loaded</span></div>
+        </div>
+        <button id="health-btn" onclick="refreshHealth()">Refresh Health</button>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const STORAGE_KEYS = {
+      config: 'sovereign-ledger-config',
+      token: 'sovereign-ledger-token',
+      audit: 'sovereign-ledger-audit',
+      lastAnchor: 'sovereign-ledger-last-anchor',
+      publicKey: 'sovereign-ledger-public-key'
+    };
+
+    let state = {
+      baseUrl: 'https://sovereign-ledger.mubiru-moses-matt.workers.dev',
+      systemId: 'veritas-mechanica',
+      token: '',
+      publicKey: '',
+      auditEntries: [],
+      lastAnchor: null
+    };
+
+    function loadState() {
+      const savedConfig = parseJSON(localStorage.getItem(STORAGE_KEYS.config), {});
+      state.baseUrl = savedConfig.baseUrl || state.baseUrl;
+      state.systemId = savedConfig.systemId || state.systemId;
+      state.token = localStorage.getItem(STORAGE_KEYS.token) || '';
+      state.publicKey = localStorage.getItem(STORAGE_KEYS.publicKey) || '';
+      state.auditEntries = parseJSON(localStorage.getItem(STORAGE_KEYS.audit), []);
+      state.lastAnchor = parseJSON(localStorage.getItem(STORAGE_KEYS.lastAnchor), null);
+      document.getElementById('base-url').value = state.baseUrl;
+      document.getElementById('default-system-id').value = state.systemId;
+      if (state.token) {
+        document.getElementById('jwt-input').value = state.token;
+      }
+      if (state.lastAnchor && state.lastAnchor.final_hash) {
+        document.getElementById('hash-input').value = state.lastAnchor.final_hash;
+      }
+      if (state.lastAnchor && state.lastAnchor.observation_count) {
+        document.getElementById('count-input').value = state.lastAnchor.observation_count;
+      }
+      if (state.publicKey) {
+        document.getElementById('public-key-output').textContent = state.publicKey;
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEYS.config, JSON.stringify({
+        baseUrl: state.baseUrl,
+        systemId: state.systemId
+      }));
+      localStorage.setItem(STORAGE_KEYS.audit, JSON.stringify(state.auditEntries));
+      localStorage.setItem(STORAGE_KEYS.lastAnchor, JSON.stringify(state.lastAnchor));
+      if (state.token) {
+        localStorage.setItem(STORAGE_KEYS.token, state.token);
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.token);
+      }
+      if (state.publicKey) {
+        localStorage.setItem(STORAGE_KEYS.publicKey, state.publicKey);
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.publicKey);
+      }
+    }
+
+    function saveConfig() {
+      state.baseUrl = normalizeBaseUrl(document.getElementById('base-url').value);
+      state.systemId = document.getElementById('default-system-id').value.trim() || 'veritas-mechanica';
+      document.getElementById('base-url').value = state.baseUrl;
+      document.getElementById('default-system-id').value = state.systemId;
+      saveState();
+      setStatus('Configuration saved.', 'good');
+    }
+
+    function normalizeBaseUrl(url) {
+      return (url || '').trim().replace(/\/+$/, '');
+    }
+
+    function parseJSON(value, fallback) {
+      try {
+        return value ? JSON.parse(value) : fallback;
+      } catch (error) {
+        return fallback;
+      }
+    }
+
+    function setStatus(message, tone) {
+      const banner = document.getElementById('status-banner');
+      banner.className = 'status' + (tone ? ' ' + tone : '');
+      banner.textContent = message;
+    }
+
+    function setBusy(id, isBusy) {
+      const element = document.getElementById(id);
+      if (element) {
+        element.disabled = isBusy;
+      }
+    }
+
+    function formatJSON(value) {
+      return JSON.stringify(value, null, 2);
+    }
+
+    async function fetchJSON(path, options) {
+      saveConfig();
+      const response = await fetch(state.baseUrl + path, options);
+      const contentType = response.headers.get('content-type') || '';
+      const data = contentType.includes('application/json')
+        ? await response.json()
+        : await response.text();
+      if (!response.ok) {
+        throw new Error(typeof data === 'string' ? data : formatJSON(data));
+      }
+      return data;
+    }
+
+    async function fetchText(path, options) {
+      saveConfig();
+      const response = await fetch(state.baseUrl + path, options);
+      const text = await response.text();
+      if (!response.ok) {
+        throw new Error(text);
+      }
+      return text;
+    }
+
+    async function fetchPublicKey() {
+      setBusy('fetch-key-btn', true);
+      try {
+        const pem = await fetchText('/.well-known/ledger.pub');
+        state.publicKey = pem.trim();
+        saveState();
+        document.getElementById('public-key-output').textContent = pem;
+        document.getElementById('health-key').textContent = 'Loaded';
+        addAuditEntry('public_key_fetch', { length: pem.length });
+        setStatus('Public key fetched successfully.', 'good');
+      } catch (error) {
+        setStatus('Public key fetch failed: ' + error.message, 'bad');
+      } finally {
+        setBusy('fetch-key-btn', false);
+        refreshHealth();
+      }
+    }
+
+    async function login() {
+      setBusy('login-btn', true);
+      try {
+        const payload = {
+          email: document.getElementById('email-input').value.trim(),
+          device_id: document.getElementById('device-input').value.trim()
+        };
+        const result = await fetchJSON('/v1/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        state.token = result.token || '';
+        saveState();
+        document.getElementById('login-output').textContent = formatJSON(result);
+        document.getElementById('jwt-input').value = state.token || '';
+        addAuditEntry('login', {
+          email: result.email || payload.email,
+          device_id: result.device_id || payload.device_id
+        });
+        setStatus('Login succeeded.', 'good');
+      } catch (error) {
+        document.getElementById('login-output').textContent = error.message;
+        setStatus('Login failed: ' + error.message, 'bad');
+      } finally {
+        setBusy('login-btn', false);
+        refreshHealth();
+      }
+    }
+
+    function clearToken() {
+      state.token = '';
+      saveState();
+      document.getElementById('jwt-input').value = '';
+      document.getElementById('login-output').textContent = 'Token cleared.';
+      addAuditEntry('token_clear', {});
+      refreshHealth();
+      setStatus('Stored token cleared.', 'warn');
+    }
+
+    async function anchorData() {
+      setBusy('anchor-btn', true);
+      try {
+        const payload = {
+          final_hash: document.getElementById('hash-input').value.trim(),
+          observation_count: Number(document.getElementById('count-input').value),
+          system_id: state.systemId
+        };
+        const headers = { 'Content-Type': 'application/json' };
+        if (state.token) {
+          headers.Authorization = 'Bearer ' + state.token;
+        }
+        const result = await fetchJSON('/v1/data/anchor', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(payload)
+        });
+        state.lastAnchor = result;
+        saveState();
+        document.getElementById('anchor-output').textContent = formatJSON(result);
+        addAuditEntry('anchor', result);
+        setStatus('Anchor submitted successfully.', 'good');
+      } catch (error) {
+        document.getElementById('anchor-output').textContent = error.message;
+        setStatus('Anchor failed: ' + error.message, 'bad');
+      } finally {
+        setBusy('anchor-btn', false);
+        refreshHealth();
+      }
+    }
+
+    function fillFromLatestAnchor() {
+      if (!state.lastAnchor) {
+        setStatus('No saved anchor is available yet.', 'warn');
+        return;
+      }
+      document.getElementById('hash-input').value = state.lastAnchor.final_hash || '';
+      document.getElementById('count-input').value = state.lastAnchor.observation_count || 0;
+      setStatus('Latest anchor restored into the form.', 'good');
+    }
+
+    function clearJWT() {
+      document.getElementById('jwt-input').value = '';
+      document.getElementById('jwt-output').textContent = 'Awaiting input...';
+    }
+
+    async function decodeJWT() {
+      const token = document.getElementById('jwt-input').value.trim();
+      if (!token) {
+        document.getElementById('jwt-output').textContent = 'Provide a JWT first.';
+        setStatus('JWT input is empty.', 'warn');
+        return;
+      }
+
+      try {
+        const parts = token.split('.');
+        if (parts.length !== 3) {
+          throw new Error('JWTs must contain header, payload, and signature segments.');
+        }
+
+        const header = JSON.parse(base64UrlDecode(parts[0]));
+        const payload = JSON.parse(base64UrlDecode(parts[1]));
+        const verification = await verifyJWT(token, header);
+        document.getElementById('jwt-output').textContent = formatJSON({
+          header,
+          payload,
+          verification
+        });
+        addAuditEntry('jwt_decode', {
+          alg: header.alg || 'unknown',
+          verified: verification.valid
+        });
+        setStatus('JWT decoded successfully.', verification.valid ? 'good' : 'warn');
+      } catch (error) {
+        document.getElementById('jwt-output').textContent = error.message;
+        setStatus('JWT decode failed: ' + error.message, 'bad');
+      } finally {
+        refreshHealth();
+      }
+    }
+
+    async function verifyJWT(token, header) {
+      if (!header.alg) {
+        return { valid: false, reason: 'Missing alg in header.' };
+      }
+
+      if (header.alg !== 'EdDSA') {
+        return {
+          valid: false,
+          reason: 'Signature verification is only supported here for EdDSA tokens.'
+        };
+      }
+
+      if (!state.publicKey) {
+        return {
+          valid: false,
+          reason: 'Load the public key first to verify EdDSA signatures.'
+        };
+      }
+
+      try {
+        const [encodedHeader, encodedPayload, encodedSignature] = token.split('.');
+        const key = await importEd25519PublicKey(state.publicKey);
+        const verified = await crypto.subtle.verify(
+          'Ed25519',
+          key,
+          base64UrlToUint8Array(encodedSignature),
+          new TextEncoder().encode(encodedHeader + '.' + encodedPayload)
+        );
+        return {
+          valid: verified,
+          reason: verified ? 'Signature verified with published Ed25519 public key.' : 'Signature did not verify.'
+        };
+      } catch (error) {
+        return {
+          valid: false,
+          reason: 'Verification error: ' + error.message
+        };
+      }
+    }
+
+    async function importEd25519PublicKey(pem) {
+      const base64 = pem
+        .replace('-----BEGIN PUBLIC KEY-----', '')
+        .replace('-----END PUBLIC KEY-----', '')
+        .replace(/\s+/g, '');
+      const binary = Uint8Array.from(atob(base64), char => char.charCodeAt(0));
+      return crypto.subtle.importKey(
+        'spki',
+        binary.buffer,
+        'Ed25519',
+        true,
+        ['verify']
+      );
+    }
+
+    function base64UrlDecode(input) {
+      const normalized = input.replace(/-/g, '+').replace(/_/g, '/');
+      const padded = normalized + '==='.slice((normalized.length + 3) % 4);
+      const decoded = atob(padded);
+      const bytes = Uint8Array.from(decoded, char => char.charCodeAt(0));
+      return new TextDecoder().decode(bytes);
+    }
+
+    function base64UrlToUint8Array(input) {
+      const normalized = input.replace(/-/g, '+').replace(/_/g, '/');
+      const padded = normalized + '==='.slice((normalized.length + 3) % 4);
+      const decoded = atob(padded);
+      return Uint8Array.from(decoded, char => char.charCodeAt(0));
+    }
+
+    async function addAuditEntry(action, data) {
+      const timestamp = new Date().toISOString();
+      const previous = state.auditEntries[state.auditEntries.length - 1] || null;
+      const prevHash = previous ? previous.hash : 'GENESIS';
+      const id = state.auditEntries.length + 1;
+      const payload = { id, timestamp, action, data, prev_hash: prevHash };
+      const hash = await sha256(JSON.stringify(payload));
+      state.auditEntries.push({ ...payload, hash });
+      saveState();
+      loadAuditLog();
+    }
+
+    async function sha256(text) {
+      const bytes = new TextEncoder().encode(text);
+      const digest = await crypto.subtle.digest('SHA-256', bytes);
+      return Array.from(new Uint8Array(digest))
+        .map(byte => byte.toString(16).padStart(2, '0'))
+        .join('');
+    }
+
+    function loadAuditLog() {
+      const query = document.getElementById('audit-search').value.trim().toLowerCase();
+      const rows = query
+        ? state.auditEntries.filter(entry => JSON.stringify(entry).toLowerCase().includes(query))
+        : state.auditEntries;
+      const body = document.getElementById('audit-body');
+
+      if (!rows.length) {
+        body.innerHTML = '<tr><td colspan="4" class="small">No matching entries.</td></tr>';
+        return;
+      }
+
+      body.innerHTML = rows.slice().reverse().map(entry => `
+        <tr>
+          <td>${entry.id}</td>
+          <td>${escapeHTML(entry.timestamp)}</td>
+          <td>${escapeHTML(entry.action)}</td>
+          <td class="mono" title="${escapeHTML(entry.hash)}">${escapeHTML(entry.hash.slice(0, 16))}…</td>
+        </tr>
+      `).join('');
+    }
+
+    function clearAuditLog() {
+      state.auditEntries = [];
+      saveState();
+      loadAuditLog();
+      refreshHealth();
+      setStatus('Local audit log cleared.', 'warn');
+    }
+
+    async function refreshHealth() {
+      const chain = await verifyAuditChain(state.auditEntries);
+      document.getElementById('health-chain').textContent = chain.valid ? '✅ Valid' : '⚠️ Broken';
+      document.getElementById('health-chain').style.color = chain.valid ? 'var(--good)' : 'var(--bad)';
+      document.getElementById('health-count').textContent = String(state.auditEntries.length);
+      document.getElementById('health-last').textContent = state.auditEntries.length
+        ? state.auditEntries[state.auditEntries.length - 1].hash
+        : '—';
+      document.getElementById('health-anchor-time').textContent = state.lastAnchor && state.lastAnchor.timestamp
+        ? state.lastAnchor.timestamp
+        : '—';
+      document.getElementById('health-key').textContent = state.publicKey ? 'Loaded' : 'Not loaded';
+
+      setBusy('health-btn', true);
+      try {
+        const result = await fetchJSON('/health');
+        document.getElementById('health-worker').textContent =
+          typeof result === 'string' ? result : (result.status || 'Online');
+      } catch (error) {
+        document.getElementById('health-worker').textContent = 'Unavailable';
+      } finally {
+        setBusy('health-btn', false);
+      }
+    }
+
+    async function verifyAuditChain(entries) {
+      let previousHash = 'GENESIS';
+      for (const entry of entries) {
+        const payload = {
+          id: entry.id,
+          timestamp: entry.timestamp,
+          action: entry.action,
+          data: entry.data,
+          prev_hash: entry.prev_hash
+        };
+        const expectedHash = await sha256(JSON.stringify(payload));
+        if (entry.prev_hash !== previousHash || entry.hash !== expectedHash) {
+          return { valid: false, failedId: entry.id };
+        }
+        previousHash = entry.hash;
+      }
+      return { valid: true };
+    }
+
+    function copyOutput(id) {
+      const value = document.getElementById(id).textContent;
+      navigator.clipboard.writeText(value).then(
+        () => setStatus('Copied to clipboard.', 'good'),
+        () => setStatus('Clipboard copy failed.', 'bad')
+      );
+    }
+
+    function escapeHTML(value) {
+      return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    async function refreshAll() {
+      await refreshHealth();
+      if (state.publicKey) {
+        document.getElementById('public-key-output').textContent = state.publicKey;
+      }
+      loadAuditLog();
+      setStatus('Dashboard refreshed.', 'good');
+    }
+
+    window.addEventListener('load', async () => {
+      loadState();
+      loadAuditLog();
+      await refreshHealth();
+      if (state.publicKey) {
+        document.getElementById('public-key-output').textContent = state.publicKey;
+      }
+      if (state.lastAnchor) {
+        document.getElementById('anchor-output').textContent = formatJSON(state.lastAnchor);
+      }
+    });
+  </script>
 </body>
 </html>
