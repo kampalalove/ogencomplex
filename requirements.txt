@@ -1,0 +1,4 @@
+Flask==2.3.3
+python-dotenv==1.0.0
+# wasmtime is optional; uncomment if you need WASM sandboxing
+# wasmtime==14.0.0
