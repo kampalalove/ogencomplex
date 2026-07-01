@@ -589,7 +589,7 @@
           throw new Error('A final hash is required.');
         }
         if (!Number.isInteger(observationCount) || observationCount <= 0) {
-          throw new Error('Observation count must be a positive integer. Received: ' + document.getElementById('count-input').value);
+          throw new Error('Observation count must be a positive integer.');
         }
         const payload = {
           final_hash: finalHash,
@@ -715,7 +715,7 @@
           .replace('-----BEGIN PUBLIC KEY-----', '')
           .replace('-----END PUBLIC KEY-----', '')
           .replace(/\s+/g, '');
-        const binary = Uint8Array.from(atob(base64), char => char.charCodeAt(0));
+        const binary = decodeBase64ToUint8Array(base64);
         return crypto.subtle.importKey(
           'spki',
           binary.buffer,
@@ -729,17 +729,21 @@
     }
 
     function base64UrlDecode(input) {
-      const normalized = input.replace(/-/g, '+').replace(/_/g, '/');
-      const padded = normalized + '==='.slice(0, (4 - normalized.length % 4) % 4);
-      const decoded = atob(padded);
-      const bytes = Uint8Array.from(decoded, char => char.charCodeAt(0));
+      const bytes = decodeBase64ToUint8Array(base64UrlToBase64(input));
       return new TextDecoder().decode(bytes);
     }
 
     function base64UrlToUint8Array(input) {
+      return decodeBase64ToUint8Array(base64UrlToBase64(input));
+    }
+
+    function base64UrlToBase64(input) {
       const normalized = input.replace(/-/g, '+').replace(/_/g, '/');
-      const padded = normalized + '==='.slice(0, (4 - normalized.length % 4) % 4);
-      const decoded = atob(padded);
+      return normalized + '==='.slice(0, (4 - normalized.length % 4) % 4);
+    }
+
+    function decodeBase64ToUint8Array(input) {
+      const decoded = atob(input);
       return Uint8Array.from(decoded, char => char.charCodeAt(0));
     }
 
@@ -747,14 +751,21 @@
       const timestamp = new Date().toISOString();
       const previous = state.auditEntries[state.auditEntries.length - 1] || null;
       const prevHash = previous ? previous.hash : 'GENESIS';
-      const id = typeof crypto.randomUUID === 'function'
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const id = createAuditId();
       const payload = { id, timestamp, action, data, prev_hash: prevHash };
       const hash = await sha256(JSON.stringify(payload));
       state.auditEntries.push({ ...payload, hash });
       saveState();
       loadAuditLog();
+    }
+
+    function createAuditId() {
+      if (typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+      }
+      const bytes = new Uint8Array(8);
+      crypto.getRandomValues(bytes);
+      return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
     }
 
     async function sha256(text) {
@@ -842,6 +853,7 @@
     function copyOutput(id) {
       const value = document.getElementById(id).textContent;
       if (!navigator.clipboard || !window.isSecureContext) {
+        window.prompt('Copy the text below manually:', value);
         setStatus('Clipboard copy is only available on HTTPS or localhost.', 'warn');
         return;
       }
