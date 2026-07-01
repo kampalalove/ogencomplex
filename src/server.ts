@@ -1,11 +1,7 @@
 import express from 'express';
 import { produce } from './producer';
-import { applyEdits } from './editor';
 import { commercial_engine_produce } from './commercial_engine';
 import { createDistributionContract, withdraw } from './distributor';
-import { verifyReceipt, getReceiptsDir } from './vault';
-import * as fs from 'fs';
-import * as path from 'path';
 
 const app = express();
 const PORT = process.env.PORT || 3000;

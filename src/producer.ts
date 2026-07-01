@@ -18,7 +18,7 @@ export interface TrackMetadata {
 }
 
 function generateIPFingerprint(audioHash: string, metadata: TrackMetadata): string {
-  const fingerprint = hashContent(`${audioHash}:${metadata.title}:${metadata.artist}:${Date.now()}`);
+  const fingerprint = hashContent(`${audioHash}:${metadata.title}:${metadata.artist}`);
   return `IPF-${fingerprint.slice(0, 16)}`;
 }
 

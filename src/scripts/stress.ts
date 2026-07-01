@@ -1,6 +1,5 @@
 import * as crypto from 'crypto';
 import { produce } from '../producer';
-import { commercial_engine_produce } from '../commercial_engine';
 import { createReceipt } from '../vault';
 
 /**
@@ -15,7 +14,6 @@ function runStress(): void {
 
   // Generate a fixed test audio buffer
   const testAudio = crypto.randomBytes(44100 * 2); // ~1 second of 16-bit audio
-  const audioBase64 = testAudio.toString('base64');
 
   const startTotal = Date.now();
 
@@ -39,9 +37,8 @@ function runStress(): void {
   console.log(`Throughput: ${(1000 / avgMs).toFixed(1)} ops/sec\n`);
 
   // Determinism check: same input should produce same masterId
-  const checkBuffer = Buffer.from(audioBase64, 'base64');
-  const r1 = produce(checkBuffer, { title: 'DetCheck', artist: 'Bot', sampleRate: 44100 });
-  const r2 = produce(checkBuffer, { title: 'DetCheck', artist: 'Bot', sampleRate: 44100 });
+  const r1 = produce(testAudio, { title: 'DetCheck', artist: 'Bot', sampleRate: 44100 });
+  const r2 = produce(testAudio, { title: 'DetCheck', artist: 'Bot', sampleRate: 44100 });
 
   const deterministic = r1.masterId === r2.masterId;
   console.log(`Determinism check: ${deterministic ? 'PASSED' : 'FAILED'}`);

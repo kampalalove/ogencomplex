@@ -20,7 +20,7 @@ export interface SignedContract {
   hash: string;
 }
 
-const VAULT_SECRET = crypto.randomBytes(32).toString('hex');
+const VAULT_SECRET = process.env.VAULT_SECRET || crypto.randomBytes(32).toString('hex');
 const RECEIPTS_DIR = path.resolve(__dirname, '..', 'receipts');
 
 function ensureReceiptsDir(): void {
@@ -87,7 +87,8 @@ export function verifyReceipt(receipt: Receipt): boolean {
     data: receipt.data,
   });
   const expectedHash = hashContent(payload);
-  return expectedHash === receipt.hash;
+  const expectedSignature = sign(payload);
+  return expectedHash === receipt.hash && expectedSignature === receipt.signature;
 }
 
 export function getReceiptsDir(): string {
