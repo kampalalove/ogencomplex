@@ -1,0 +1,24 @@
+{
+  "name": "ogencomplex",
+  "version": "1.0.0",
+  "description": "The Ogen Complex — Gate 1 Engine + Gate 2 Money Path API",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "api": "tsc && node dist/server.js",
+    "money": "tsc && node dist/scripts/money.js",
+    "stress": "tsc && node dist/scripts/stress.js",
+    "start": "node dist/server.js",
+    "test": "tsc --noEmit"
+  },
+  "keywords": [],
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3"
+  }
+}
