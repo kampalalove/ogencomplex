@@ -739,7 +739,8 @@
 
     function base64UrlToBase64(input) {
       const normalized = input.replace(/-/g, '+').replace(/_/g, '/');
-      return normalized + '==='.slice(0, (4 - normalized.length % 4) % 4);
+      const padding = (4 - (normalized.length % 4)) % 4;
+      return normalized + '='.repeat(padding);
     }
 
     function decodeBase64ToUint8Array(input) {
@@ -763,7 +764,7 @@
       if (typeof crypto.randomUUID === 'function') {
         return crypto.randomUUID();
       }
-      const bytes = new Uint8Array(8);
+      const bytes = new Uint8Array(16);
       crypto.getRandomValues(bytes);
       return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
     }
@@ -793,7 +794,7 @@
           <td>${escapeHTML(entry.id)}</td>
           <td>${escapeHTML(entry.timestamp)}</td>
           <td>${escapeHTML(entry.action)}</td>
-          <td class="mono" title="${escapeHTML(entry.hash)}">${escapeHTML(entry.hash.slice(0, 16))}…</td>
+          <td class="mono" title="${escapeHTML(entry.hash)}" aria-label="Hash ${escapeHTML(entry.hash)}">${escapeHTML(entry.hash.slice(0, 16))}…</td>
         </tr>
       `).join('');
     }
@@ -852,7 +853,7 @@
 
     function copyOutput(id) {
       const value = document.getElementById(id).textContent;
-      if (!navigator.clipboard || !window.isSecureContext) {
+      if (!navigator.clipboard?.writeText || !window.isSecureContext) {
         window.prompt('Copy the text below manually:', value);
         setStatus('Clipboard copy is only available on HTTPS or localhost.', 'warn');
         return;
