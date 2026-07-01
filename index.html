@@ -398,7 +398,7 @@
     };
 
     let state = {
-      baseUrl: 'https://sovereign-ledger.mubiru-moses-matt.workers.dev',
+      baseUrl: '',
       systemId: 'veritas-mechanica',
       token: '',
       publicKey: '',
@@ -794,7 +794,7 @@
           <td>${escapeHTML(entry.id)}</td>
           <td>${escapeHTML(entry.timestamp)}</td>
           <td>${escapeHTML(entry.action)}</td>
-          <td class="mono" title="${escapeHTML(entry.hash)}" aria-label="Hash ${escapeHTML(entry.hash)}">${escapeHTML(entry.hash.slice(0, 16))}…</td>
+          <td class="mono" title="${escapeHTML(entry.hash)}" aria-label="Entry hash ${escapeHTML(entry.hash)}">${escapeHTML(entry.hash.slice(0, 16))}…</td>
         </tr>
       `).join('');
     }
@@ -854,8 +854,16 @@
     function copyOutput(id) {
       const value = document.getElementById(id).textContent;
       if (!navigator.clipboard?.writeText || !window.isSecureContext) {
-        window.prompt('Copy the text below manually:', value);
-        setStatus('Clipboard copy is only available on HTTPS or localhost.', 'warn');
+        const helper = document.createElement('textarea');
+        helper.value = value;
+        helper.setAttribute('readonly', '');
+        helper.style.position = 'fixed';
+        helper.style.opacity = '0';
+        document.body.appendChild(helper);
+        helper.select();
+        document.execCommand('copy');
+        document.body.removeChild(helper);
+        setStatus('Used the legacy copy fallback for this browser.', 'warn');
         return;
       }
       navigator.clipboard.writeText(value).then(
