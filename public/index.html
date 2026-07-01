@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Veritas Decision Engine</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 0.25rem;
+      color: #38bdf8;
+    }
+    .subtitle {
+      color: #94a3b8;
+      margin-bottom: 2rem;
+    }
+    .card {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 480px;
+      margin-bottom: 1.5rem;
+    }
+    label {
+      display: block;
+      font-size: 0.875rem;
+      color: #94a3b8;
+      margin-bottom: 0.25rem;
+      margin-top: 1rem;
+    }
+    label:first-child { margin-top: 0; }
+    input {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      background: #0f172a;
+      color: #e2e8f0;
+      font-size: 1rem;
+    }
+    input:focus { outline: 2px solid #38bdf8; border-color: transparent; }
+    button {
+      margin-top: 1.5rem;
+      width: 100%;
+      padding: 0.75rem;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #1d4ed8; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .results { width: 100%; max-width: 480px; }
+    .results h2 { font-size: 1.25rem; margin-bottom: 1rem; color: #38bdf8; }
+    .match {
+      background: #1e293b;
+      border-left: 4px solid #22c55e;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .match.high { border-left-color: #ef4444; }
+    .match .rule { font-weight: 600; font-size: 1rem; }
+    .match .action { color: #94a3b8; margin-top: 0.25rem; font-size: 0.875rem; }
+    .match .priority {
+      display: inline-block;
+      margin-top: 0.5rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .priority.high { background: #7f1d1d; color: #fca5a5; }
+    .priority.low  { background: #14532d; color: #86efac; }
+    .no-match { color: #94a3b8; text-align: center; padding: 1rem; }
+    .error { color: #fca5a5; text-align: center; margin-top: 1rem; }
+    .config-bar {
+      width: 100%;
+      max-width: 480px;
+      margin-bottom: 1rem;
+    }
+    .config-bar label { margin-top: 0; }
+    .config-bar input { font-size: 0.875rem; }
+  </style>
+</head>
+<body>
+  <h1>Veritas</h1>
+  <p class="subtitle">Decision Engine UI</p>
+
+  <div class="config-bar card" style="padding: 1rem 1.5rem;">
+    <label for="apiUrl">API URL</label>
+    <input id="apiUrl" type="text" value="https://veritas-engine.workers.dev" placeholder="https://veritas-engine.workers.dev">
+    <label for="apiKey">API Key (optional)</label>
+    <input id="apiKey" type="password" placeholder="Enter API key if set">
+  </div>
+
+  <div class="card">
+    <label for="temperature">Temperature (°F)</label>
+    <input id="temperature" type="number" placeholder="e.g. 90">
+
+    <label for="voltage_drop">Voltage Drop (%)</label>
+    <input id="voltage_drop" type="number" placeholder="e.g. 20">
+
+    <label for="calibration_days">Calibration Age (days)</label>
+    <input id="calibration_days" type="number" placeholder="e.g. 400">
+
+    <label for="humidity">Humidity (%)</label>
+    <input id="humidity" type="number" placeholder="e.g. 25">
+
+    <button id="submit">Run Advisory Check</button>
+    <div id="errorMsg" class="error" hidden></div>
+  </div>
+
+  <div class="results" id="results" hidden>
+    <h2>Advisory Results</h2>
+    <div id="matchList"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById('submit');
+    const errorMsg = document.getElementById('errorMsg');
+    const resultsDiv = document.getElementById('results');
+    const matchList = document.getElementById('matchList');
+
+    form.addEventListener('click', async () => {
+      const apiUrl = document.getElementById('apiUrl').value.replace(/\/+$/, '');
+      const apiKey = document.getElementById('apiKey').value;
+
+      const payload = {};
+      for (const field of ['temperature', 'voltage_drop', 'calibration_days', 'humidity']) {
+        const val = document.getElementById(field).value;
+        if (val !== '') payload[field] = parseFloat(val);
+      }
+
+      errorMsg.hidden = true;
+      resultsDiv.hidden = true;
+      form.disabled = true;
+      form.textContent = 'Checking…';
+
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (apiKey) headers['Authorization'] = `******;
+
+        const res = await fetch(`${apiUrl}/advise`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || `HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+        matchList.innerHTML = '';
+
+        if (!data.matches || data.matches.length === 0) {
+          matchList.innerHTML = '<div class="no-match">No matching rules — all clear ✅</div>';
+        } else {
+          for (const m of data.matches) {
+            matchList.innerHTML += `
+              <div class="match ${m.priority}">
+                <div class="rule">${escapeHtml(m.rule)}</div>
+                <div class="action">${escapeHtml(m.action)}</div>
+                <span class="priority ${m.priority}">${escapeHtml(m.priority)}</span>
+              </div>`;
+          }
+        }
+
+        resultsDiv.hidden = false;
+      } catch (err) {
+        errorMsg.textContent = err.message;
+        errorMsg.hidden = false;
+      } finally {
+        form.disabled = false;
+        form.textContent = 'Run Advisory Check';
+      }
+    });
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>
