@@ -268,7 +268,7 @@
       <div class="config-grid">
         <div>
           <label for="base-url">Ledger Base URL</label>
-          <input id="base-url" type="url" value="https://sovereign-ledger.mubiru-moses-matt.workers.dev">
+          <input id="base-url" type="url" placeholder="https://sovereign-ledger.example.workers.dev">
         </div>
         <div>
           <label for="default-system-id">Default System ID</label>
@@ -298,9 +298,9 @@
         <h2>🔐 Login</h2>
         <p class="subtle">Authenticate against the live worker and persist the returned token locally.</p>
         <label for="email-input">Email</label>
-        <input id="email-input" type="email" value="test@example.com">
+        <input id="email-input" type="email" placeholder="you@example.com">
         <label for="device-input" style="margin-top:0.75rem;">Device ID</label>
-        <input id="device-input" type="text" value="device-001">
+        <input id="device-input" type="text" placeholder="device-001">
         <div class="actions">
           <button id="login-btn" onclick="login()">Login</button>
           <button onclick="clearToken()">Clear Token</button>
@@ -312,9 +312,9 @@
         <h2>⚓ Anchor Data</h2>
         <p class="subtle">Seal a final provenance hash using the deployed <span class="mono">/v1/data/anchor</span> endpoint.</p>
         <label for="hash-input">Final Hash</label>
-        <input id="hash-input" type="text" value="feeb7221">
+        <input id="hash-input" type="text" placeholder="Paste the final provenance hash">
         <label for="count-input" style="margin-top:0.75rem;">Observation Count</label>
-        <input id="count-input" type="number" min="1" value="908">
+        <input id="count-input" type="number" min="1" placeholder="908">
         <div class="actions">
           <button id="anchor-btn" onclick="anchorData()">Anchor Hash</button>
           <button onclick="fillFromLatestAnchor()">Use Last Anchor</button>
@@ -400,6 +400,9 @@
       state.publicKey = localStorage.getItem(STORAGE_KEYS.publicKey) || '';
       state.auditEntries = parseJSON(localStorage.getItem(STORAGE_KEYS.audit), []);
       state.lastAnchor = parseJSON(localStorage.getItem(STORAGE_KEYS.lastAnchor), null);
+      if (!state.baseUrl && window.location.protocol.startsWith('http')) {
+        state.baseUrl = normalizeBaseUrl(window.location.origin);
+      }
       document.getElementById('base-url').value = state.baseUrl;
       document.getElementById('default-system-id').value = state.systemId;
       if (state.token) {
@@ -458,7 +461,7 @@
 
     function setStatus(message, tone) {
       const banner = document.getElementById('status-banner');
-      banner.className = 'status' + (tone ? ' ' + tone : '');
+      banner.className = tone ? `status ${tone}` : 'status';
       banner.textContent = message;
     }
 
@@ -475,6 +478,9 @@
 
     async function fetchJSON(path, options) {
       saveConfig();
+      if (!state.baseUrl) {
+        throw new Error('Set a ledger base URL first.');
+      }
       const response = await fetch(state.baseUrl + path, options);
       const contentType = response.headers.get('content-type') || '';
       const data = contentType.includes('application/json')
@@ -488,6 +494,9 @@
 
     async function fetchText(path, options) {
       saveConfig();
+      if (!state.baseUrl) {
+        throw new Error('Set a ledger base URL first.');
+      }
       const response = await fetch(state.baseUrl + path, options);
       const text = await response.text();
       if (!response.ok) {
@@ -521,6 +530,9 @@
           email: document.getElementById('email-input').value.trim(),
           device_id: document.getElementById('device-input').value.trim()
         };
+        if (!payload.email || !payload.device_id) {
+          throw new Error('Email and device ID are required.');
+        }
         const result = await fetchJSON('/v1/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -557,9 +569,17 @@
     async function anchorData() {
       setBusy('anchor-btn', true);
       try {
+        const finalHash = document.getElementById('hash-input').value.trim();
+        const observationCount = Number(document.getElementById('count-input').value);
+        if (!finalHash) {
+          throw new Error('A final hash is required.');
+        }
+        if (!Number.isInteger(observationCount) || observationCount <= 0) {
+          throw new Error('Observation count must be a positive integer.');
+        }
         const payload = {
-          final_hash: document.getElementById('hash-input').value.trim(),
-          observation_count: Number(document.getElementById('count-input').value),
+          final_hash: finalHash,
+          observation_count: observationCount,
           system_id: state.systemId
         };
         const headers = { 'Content-Type': 'application/json' };
@@ -692,7 +712,7 @@
 
     function base64UrlDecode(input) {
       const normalized = input.replace(/-/g, '+').replace(/_/g, '/');
-      const padded = normalized + '==='.slice((normalized.length + 3) % 4);
+      const padded = normalized + '==='.slice(0, (4 - normalized.length % 4) % 4);
       const decoded = atob(padded);
       const bytes = Uint8Array.from(decoded, char => char.charCodeAt(0));
       return new TextDecoder().decode(bytes);
@@ -700,7 +720,7 @@
 
     function base64UrlToUint8Array(input) {
       const normalized = input.replace(/-/g, '+').replace(/_/g, '/');
-      const padded = normalized + '==='.slice((normalized.length + 3) % 4);
+      const padded = normalized + '==='.slice(0, (4 - normalized.length % 4) % 4);
       const decoded = atob(padded);
       return Uint8Array.from(decoded, char => char.charCodeAt(0));
     }
@@ -739,7 +759,7 @@
 
       body.innerHTML = rows.slice().reverse().map(entry => `
         <tr>
-          <td>${entry.id}</td>
+          <td>${escapeHTML(entry.id)}</td>
           <td>${escapeHTML(entry.timestamp)}</td>
           <td>${escapeHTML(entry.action)}</td>
           <td class="mono" title="${escapeHTML(entry.hash)}">${escapeHTML(entry.hash.slice(0, 16))}…</td>
@@ -801,6 +821,10 @@
 
     function copyOutput(id) {
       const value = document.getElementById(id).textContent;
+      if (!navigator.clipboard || !window.isSecureContext) {
+        setStatus('Clipboard copy is only available on HTTPS or localhost.', 'warn');
+        return;
+      }
       navigator.clipboard.writeText(value).then(
         () => setStatus('Copied to clipboard.', 'good'),
         () => setStatus('Clipboard copy failed.', 'bad')
