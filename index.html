@@ -96,6 +96,18 @@
       font-size: 0.8rem;
     }
 
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
     label {
       display: block;
       margin-bottom: 0.35rem;
@@ -325,6 +337,7 @@
       <div class="card" id="jwt-decoder">
         <h2>🔑 JWT Decoder</h2>
         <p class="subtle">Paste a token to decode claims and verify Ed25519 signatures when supported.</p>
+        <label class="sr-only" for="jwt-input">JWT token input</label>
         <textarea id="jwt-input" placeholder="Paste an EdDSA JWT here to inspect its header, claims, and signature status."></textarea>
         <div class="actions">
           <button onclick="decodeJWT()">Decode</button>
@@ -337,6 +350,7 @@
         <h2>📋 Audit Log</h2>
         <p class="subtle">Client-side tamper-evident action history with search and filter.</p>
         <div class="actions">
+          <label class="sr-only" for="audit-search">Search audit log</label>
           <input id="audit-search" type="text" placeholder="Search action, hash, or data" oninput="loadAuditLog()">
           <button onclick="loadAuditLog()">Refresh</button>
           <button onclick="clearAuditLog()">Clear</button>
@@ -575,7 +589,7 @@
           throw new Error('A final hash is required.');
         }
         if (!Number.isInteger(observationCount) || observationCount <= 0) {
-          throw new Error('Observation count must be a positive integer.');
+          throw new Error('Observation count must be a positive integer. Received: ' + document.getElementById('count-input').value);
         }
         const payload = {
           final_hash: finalHash,
@@ -696,18 +710,22 @@
     }
 
     async function importEd25519PublicKey(pem) {
-      const base64 = pem
-        .replace('-----BEGIN PUBLIC KEY-----', '')
-        .replace('-----END PUBLIC KEY-----', '')
-        .replace(/\s+/g, '');
-      const binary = Uint8Array.from(atob(base64), char => char.charCodeAt(0));
-      return crypto.subtle.importKey(
-        'spki',
-        binary.buffer,
-        'Ed25519',
-        true,
-        ['verify']
-      );
+      try {
+        const base64 = pem
+          .replace('-----BEGIN PUBLIC KEY-----', '')
+          .replace('-----END PUBLIC KEY-----', '')
+          .replace(/\s+/g, '');
+        const binary = Uint8Array.from(atob(base64), char => char.charCodeAt(0));
+        return crypto.subtle.importKey(
+          'spki',
+          binary.buffer,
+          'Ed25519',
+          true,
+          ['verify']
+        );
+      } catch (error) {
+        throw new Error('Public key PEM is malformed or unsupported.');
+      }
     }
 
     function base64UrlDecode(input) {
@@ -729,7 +747,9 @@
       const timestamp = new Date().toISOString();
       const previous = state.auditEntries[state.auditEntries.length - 1] || null;
       const prevHash = previous ? previous.hash : 'GENESIS';
-      const id = state.auditEntries.length + 1;
+      const id = typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
       const payload = { id, timestamp, action, data, prev_hash: prevHash };
       const hash = await sha256(JSON.stringify(payload));
       state.auditEntries.push({ ...payload, hash });
