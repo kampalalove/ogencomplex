@@ -1,0 +1,19 @@
+{
+  "name": "fixcord",
+  "version": "1.0.0",
+  "description": "50‑check diagnostic sweep for Node.js projects",
+  "type": "module",
+  "bin": {
+    "fixcord": "./fixcord-extended.ts"
+  },
+  "scripts": {
+    "fixcord": "npx tsx fixcord-extended.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=16"
+  }
+}
