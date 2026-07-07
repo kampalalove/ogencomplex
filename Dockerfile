@@ -6,7 +6,6 @@ WORKDIR /app
 
 # Copy everything (including .git for VCS info)
 COPY . .
-COPY .git .git
 
 # Build and verify
 RUN make stamp-and-verify

@@ -33,11 +33,15 @@ func main() {
 		fmt.Fprintf(os.Stderr, "❌ missing vcs.revision — build not reproducible?\n")
 		os.Exit(1)
 	}
+	short := commit
+	if len(short) > 12 {
+		short = short[:12]
+	}
 	if modified == "true" {
-		fmt.Fprintf(os.Stderr, "❌ dirty git tree (%s) — uncommitted changes\n", commit[:12])
+		fmt.Fprintf(os.Stderr, "❌ dirty git tree (%s) — uncommitted changes\n", short)
 		os.Exit(1)
 	}
 
-	fmt.Printf("✅ verified: commit %s, clean tree\n", commit[:12])
+	fmt.Printf("✅ verified: commit %s, clean tree\n", short)
 	os.Exit(0)
 }
