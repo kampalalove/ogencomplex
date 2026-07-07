@@ -6,6 +6,9 @@ import (
 	"os"
 )
 
+// shortCommitLength is the number of hex characters used when displaying a commit hash.
+const shortCommitLength = 12
+
 func init() {
 	exe, err := os.Executable()
 	if err != nil {
@@ -30,8 +33,8 @@ func init() {
 		log.Fatal("❌ Sovereign: missing vcs.revision — build not reproducible?")
 	}
 	short := commit
-	if len(short) > 12 {
-		short = short[:12]
+	if len(short) > shortCommitLength {
+		short = short[:shortCommitLength]
 	}
 	if modified == "true" {
 		log.Fatalf("❌ Sovereign: dirty git tree (%s) — refusing to run", short)

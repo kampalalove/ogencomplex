@@ -6,6 +6,8 @@ import (
 	"os"
 )
 
+const shortCommitLength = 12
+
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Fprintf(os.Stderr, "usage: verify_cortex_buildinfo <binary>\n")
@@ -34,8 +36,8 @@ func main() {
 		os.Exit(1)
 	}
 	short := commit
-	if len(short) > 12 {
-		short = short[:12]
+	if len(short) > shortCommitLength {
+		short = short[:shortCommitLength]
 	}
 	if modified == "true" {
 		fmt.Fprintf(os.Stderr, "❌ dirty git tree (%s) — uncommitted changes\n", short)

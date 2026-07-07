@@ -3,6 +3,7 @@ TOOLS_DIR := tools
 PARSER ?= cortex_parser_v4
 PARSER_BIN := $(BIN_DIR)/$(PARSER)
 
+# -s -w strip debug symbols; -buildid= ensures reproducible builds required by the buildinfo gatekeeper
 LDFLAGS := -ldflags="-s -w -buildid="
 BUILD_FLAGS := $(LDFLAGS) -trimpath
 
