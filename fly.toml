@@ -1,20 +1,32 @@
-app = "ogencomplex"
-primary_region = "ewr"
+﻿FROM golang:1.22-alpine AS builder
+RUN apk add --no-cache git
+WORKDIR /app
+COPY go.mod ./
+RUN go mod download
+# Explicitly include the local .git directory layer for runtime VCS embedding validation
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -o cortex_parser_v4 ./cmd/cortex_parser_v4
 
-[build]
-  dockerfile = "Dockerfile"
+FROM alpine:latest AS runtime
+WORKDIR /app
+COPY --from=builder /app/cortex_parser_v4 .
+EXPOSE 3000
+CMD ["./cortex_parser_v4"]
+@' | Out-File -FilePath Dockerfile -Encoding utf8
 
-[env]
-  PORT = "3000"
+# 7. Emit fly.toml configuration
+@'
+app = "cortex-parser"
+primary_region = "phx"
 
-[[services]]
+[http_service]
   internal_port = 3000
-  protocol = "tcp"
-  
-  [[services.ports]]
-    port = 80
-    handlers = ["http"]
-  
-  [[services.ports]]
-    port = 443
-    handlers = ["tls", "http"]
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
