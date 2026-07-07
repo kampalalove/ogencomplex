@@ -1,0 +1,20 @@
+app = "ogencomplex"
+primary_region = "ewr"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "3000"
+
+[[services]]
+  internal_port = 3000
+  protocol = "tcp"
+  
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+  
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]

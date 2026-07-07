@@ -1,0 +1,209 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sovereign Console - OGEN Complex</title>
+    <style>
+        body { background: #0d0e12; color: #e2e8f0; font-family: monospace; margin: 0; padding: 20px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 1400px; margin: 0 auto; }
+        .card { background: #161920; border: 1px solid #2d3139; padding: 20px; border-radius: 6px; }
+        h2 { margin-top: 0; color: #38bdf8; border-bottom: 1px solid #2d3139; padding-bottom: 8px; }
+        button { background: #0284c7; color: white; border: none; padding: 10px 16px; font-family: monospace; cursor: pointer; border-radius: 4px; font-weight: bold; width: 100%; margin-top: 10px; }
+        button:hover { background: #0369a1; }
+        pre { background: #090a0f; padding: 12px; border-radius: 4px; overflow-x: auto; border: 1px solid #1e293b; max-height: 250px; font-size: 12px; color: #34d399; }
+        .log-entry { margin: 4px 0; font-size: 12px; }
+        .gate-pass { color: #4ade80; }
+        .input-group { margin-bottom: 12px; }
+        label { display: block; font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
+        input, select { width: 100%; padding: 8px; background: #090a0f; border: 1px solid #2d3139; color: white; font-family: monospace; box-sizing: border-box; }
+        audio { width: 100%; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div style="max-width: 1400px; margin: 0 auto 20px auto; padding: 0 10px;">
+        <h1 style="margin: 0; font-size: 24px; color: #f8fafc;">OGEN Complex // Sovereign Ledger Console</h1>
+        <p style="color: #64748b; margin: 4px 0 20px 0;">Deterministic Edge Pipeline • System Corner: 75°C Enforced</p>
+    </div>
+
+    <div class="grid">
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            <div class="card">
+                <h2>1. Math Synthesis Production Core</h2>
+                <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 10px; margin: 0 0 10px 0;">
+                    <div class="input-group">
+                        <label>Tempo (BPM)</label>
+                        <input type="number" id="bpm" value="120">
+                    </div>
+                    <div class="input-group">
+                        <label>Scale Signature</label>
+                        <select id="key">
+                            <option value="Cmajor">C Major (Bright)</option>
+                            <option value="Aminor">A Minor (Dark/Deep)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 10px; margin: 0 0 10px 0;">
+                    <div class="input-group">
+                        <label>Waveform Oscillator</label>
+                        <select id="waveform">
+                            <option value="sine">Sine Wave</option>
+                            <option value="square">Square Wave</option>
+                            <option value="sawtooth">Sawtooth Wave</option>
+                            <option value="triangle">Triangle Wave</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Entropy Seed</label>
+                        <input type="number" id="seed" value="42">
+                    </div>
+                </div>
+                <button id="btnProduce">Execute Track Composition Math</button>
+                <div id="audioPlayerContainer" style="display:none; margin-top:15px;">
+                    <label style="color:#38bdf8;">Generated Asset Waveform Playback:</label>
+                    <audio id="audioPlayback" controls></audio>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>2. Smart Ledger Distribution Contract</h2>
+                <div class="input-group">
+                    <label>Artist Identifier</label>
+                    <input type="text" id="artist" value="Site_001">
+                </div>
+                <div class="input-group">
+                    <label>Asset Title Tracking Reference</label>
+                    <input type="text" id="title" value="PHX-01" readonly>
+                </div>
+                <div class="input-group">
+                    <label>Revenue Split Core (%)</label>
+                    <input type="number" id="split" value="85">
+                </div>
+                <button id="btnMint" disabled>Mint & Anchor Asset Contract</button>
+            </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            <div class="card">
+                <h2>System Hard-Gate Validation Logs</h2>
+                <div id="gateLogs" style="background: #090a0f; padding: 12px; min-height: 120px; border-radius: 4px; border: 1px solid #1e293b;">
+                    <div style="color: #64748b; font-style: italic;">Awaiting track composition generation initiation...</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Console Provenance Pipeline Trace</h2>
+                <label>Active Endpoint Response Receipt</label>
+                <pre id="outputConsole">// Cryptographic receipt hashes will print here...</pre>
+                <button id="btnVerify" style="background: #10b981;" disabled>Execute Verification Loop</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        let lastProductionReceipt = null;
+        let lastMintedContract = null;
+
+        function logGates(logs) {
+            const container = document.getElementById('gateLogs');
+            container.innerHTML = '';
+            logs.forEach(log => {
+                const div = document.createElement('div');
+                div.className = 'log-entry' + (log.includes('✅') || log.includes('🔒') ? ' gate-pass' : '');
+                div.innerText = log;
+                container.appendChild(div);
+            });
+        }
+
+        document.getElementById('btnProduce').addEventListener('click', async () => {
+            const payload = {
+                bpm: parseInt(document.getElementById('bpm').value),
+                key: document.getElementById('key').value,
+                bars: 4,
+                waveform: document.getElementById('waveform').value,
+                seed: parseInt(document.getElementById('seed').value)
+            };
+
+            document.getElementById('outputConsole').innerText = "Synthesizing PCM signals on the edge...";
+            
+            try {
+                const res = await fetch(`${API_BASE}/produce`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                lastProductionReceipt = data;
+                
+                document.getElementById('outputConsole').innerText = JSON.stringify(data, null, 2);
+                
+                if(data.gateAudit) {
+                    logGates(data.gateAudit);
+                    document.getElementById('btnMint').removeAttribute('disabled');
+                    document.getElementById('title').value = `PHX-01 [Asset:${data.hash.substring(0,8)}]`;
+                }
+
+                if(data.audioBinary) {
+                    const audioEl = document.getElementById('audioPlayback');
+                    audioEl.src = `data:audio/wav;base64,${data.audioBinary}`;
+                    document.getElementById('audioPlayerContainer').style.display = 'block';
+                }
+            } catch (err) {
+                document.getElementById('outputConsole').innerText = `Error: ${err.message}`;
+            }
+        });
+
+        document.getElementById('btnMint').addEventListener('click', async () => {
+            if(!lastProductionReceipt) return;
+
+            const payload = {
+                artist: document.getElementById('artist').value,
+                title: document.getElementById('title').value,
+                iswc: "T-000.000.001-0",
+                split: parseInt(document.getElementById('split').value),
+                territory: "Global",
+                termDays: 365,
+                rightsCleared: lastProductionReceipt.territory_matrix.US.cleared,
+                caCompliant: lastProductionReceipt.territory_matrix.CA.cleared,
+                globalRights: ["US", "EU", "UK"]
+            };
+
+            try {
+                const res = await fetch(`${API_BASE}/contract`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                lastMintedContract = data;
+                
+                document.getElementById('outputConsole').innerText = JSON.stringify(data, null, 2);
+                document.getElementById('btnVerify').removeAttribute('disabled');
+            } catch (err) {
+                document.getElementById('outputConsole').innerText = `Error: ${err.message}`;
+            }
+        });
+
+        document.getElementById('btnVerify').addEventListener('click', async () => {
+            if(!lastMintedContract) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/contract/verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        payload: lastMintedContract.payload,
+                        hash: lastMintedContract.hash,
+                        signature: lastMintedContract.signature
+                    })
+                });
+                const data = await res.json();
+                document.getElementById('outputConsole').innerText = `VERIFICATION RESULT:\n====================\n${JSON.stringify(data, null, 2)}`;
+            } catch (err) {
+                document.getElementById('outputConsole').innerText = `Error: ${err.message}`;
+            }
+        });
+    </script>
+</body>
+</html>
