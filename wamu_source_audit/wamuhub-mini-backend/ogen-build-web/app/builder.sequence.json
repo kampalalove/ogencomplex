@@ -1,0 +1,6 @@
+{
+  "steps": [
+    { "name": "list files", "cmd": "dir" },
+    { "name": "show node version", "cmd": "node -v" }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "feature": "health endpoint",
+  "changes": [
+    {
+      "file": "app.js",
+      "action": "append",
+      "code": "\napp.get('/health', (req, res) => res.json({ ok: true }));\n"
+    }
+  ]
+}

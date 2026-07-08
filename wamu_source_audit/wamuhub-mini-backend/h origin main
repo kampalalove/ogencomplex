@@ -1,0 +1,10 @@
+*   [33m0537f23[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Merge remote-tracking branch 'origin/main'
+[31m|[m[32m\[m  
+[31m|[m *   [33mab931aa[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Merge pull request #3 from kampalalove/feature/launch-guard-multi-region-mvp
+[31m|[m [33m|[m[34m\[m  
+[31m|[m [33m|[m * [33mf5839d9[m[33m ([m[1;31morigin/feature/launch-guard-multi-region-mvp[m[33m)[m feat: add multi-region launch guard MVP
+[31m|[m [33m|[m[33m/[m  
+* [33m/[m [33mfaf4a86[m[33m ([m[1;32mbackup/crud-baseline-faf4a86[m[33m)[m pass: mini backend frontend CRUD baseline
+[33m|[m[33m/[m  
+*   [33m3f1dae0[m Merge pull request #2 from kampalalove/copilot/stop-over-here
+[35m|[m[36m\[m  

@@ -1,34 +1,44 @@
 package main
 
 import (
-	"fmt"
-	"log"
-	"net/http"
-	"os"
+"fmt"
+"log"
+"net/http"
+"os"
+"os/signal"
+"syscall"
 
-	_ "github.com/kampalalove/ogencomplex/internal/parser" // triggers init gatekeeper
+"github.com/kampalalove/ogencomplex/ingest"
 )
 
 func main() {
-	log.Println("✅ Cortex V4 gatekeeper passed. Starting server...")
+basePath, err := os.Getwd()
+if err != nil {
+log.Fatalf("Failed to get working directory: %s", err", err)
+}
 
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, "OK - buildinfo verified")
-	})
+handler, err := ingest.NewHandler(basePath)
+if err != nil {
+log.Fatalf("Failed to initialize ingestion handler: %s", err)
+}
 
-	// Optional: webhook receiver for WamuHub events (we can expand later)
-	http.HandleFunc("/webhook/wamuhub", func(w http.ResponseWriter, r *http.Request) {
-		// Placeholder for the loan_repaid → Idea Database bridge
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, "Webhook received (integration pending)")
-	})
+http.Handle("/", handler)
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
+port := "3000" // Matches internal_port defined in your production fly.toml
+serverAddr := "0.0.0.0:" + port
 
-	log.Printf("Listening on :%s", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+fmt.Printf("🚀 Local Consensus Webhook running securely on http://%s\n", serverAddr)
+fmt.Println("Press Ctrl+C to terminate runtime engine.")
+
+sigChan := make(chan os.Signal, 1)
+signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+go func() {
+if err := http.ListenAndServe(serverAddr, nil); err != nil {
+log.Fatalf("Server execution failed: %s", err)
+}
+}()
+
+<-sigChan
+fmt.Println("\nStopping Webhook runtime engine. Safe exit complete.")
 }
