@@ -1,0 +1,2 @@
+{"timestamp":"2026-07-09T10:06:39Z","ip":"[::1]","method":"POST","path":"/","system_id":"aquila-core","status_code":200,"latency_ms":0,"rule_id":"allow-all","allowed":true,"node_id":"d2dfb85a","region":"local"}
+{"timestamp":"2026-07-09T10:06:39Z","ip":"[::1]","method":"POST","path":"/","system_id":"../etc/passwd","status_code":400,"latency_ms":0,"allowed":false,"node_id":"d2dfb85a","region":"local"}
