@@ -1,0 +1,11 @@
+{
+  "policy_id": "default-allow-v1",
+  "version": "1.0.0",
+  "rules": [
+    {
+      "id": "allow-all",
+      "condition": "true",
+      "effect": "ALLOW"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "attestation": {
+    "pcr0": "0000000000000000000000000000000000000000000000000000000000000000",
+    "platform": "fly-io-lax"
+  },
+  "decision_id": "initial-deployment",
+  "issued_at": "2026-07-09T00:00:00Z",
+  "payload": {
+    "decision": "ALLOW",
+    "rx_hash": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "policy": {
+    "policy_id": "default-allow-v1",
+    "hash_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "receipt_id": "initial-receipt"
+}

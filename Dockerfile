@@ -9,5 +9,6 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o cortex_parser_v4 ./cmd/cortex_parser_v4
 FROM alpine:latest AS runtime
 WORKDIR /app
 COPY --from=builder /app/cortex_parser_v4 .
+COPY policy_rail_v1.json canonical_payload.json ./
 EXPOSE 3000
 CMD ["./cortex_parser_v4"]
