@@ -4,6 +4,8 @@ import (
 "encoding/json"
 "fmt"
 "net/http"
+"os"
+"path/filepath"
 "time"
 
 "github.com/kampalalove/ogencomplex/index"
@@ -29,10 +31,13 @@ PolicyEnforcer: enforcer,
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-// --- HEALTH CHECK GET ROUTE ---
+// --- DEEP READ TRACK: Dynamic State Telemetry Extraction ---
 if r.Method == http.MethodGet {
+systemID := r.URL.Query().Get("system_id")
 w.Header().Set("Content-Type", "application/json")
-w.WriteHeader(http.StatusOK)
+
+if systemID == "" {
+// Fallback to standard core cluster health signature
 response := map[string]interface{}{
 "status":      "ONLINE",
 "cluster":     "universe.index",
@@ -40,7 +45,29 @@ response := map[string]interface{}{
 "sovereign":   true,
 "environment": "edge-lax",
 }
+w.WriteHeader(http.StatusOK)
 json.NewEncoder(w).Encode(response)
+return
+}
+
+// Read the stored telemetry fragment directly from disk
+basePath, _ := os.Getwd()
+profilePath := filepath.Join(basePath, "universe.index", fmt.Sprintf("%s.json", systemID))
+
+data, err := os.ReadFile(profilePath)
+if err != nil {
+if os.IsNotExist(err) {
+w.WriteHeader(http.StatusNotFound)
+w.Write([]byte(fmt.Sprintf(`{"status":"FAILED","error":"System profile not found for target: %s"}`, systemID)))
+} else {
+w.WriteHeader(http.StatusInternalServerError)
+w.Write([]byte(fmt.Sprintf(`{"status":"FAILED","error":"Internal server error: %s"}`, err.Error())))
+}
+return
+}
+
+w.WriteHeader(http.StatusOK)
+w.Write(data)
 return
 }
 
