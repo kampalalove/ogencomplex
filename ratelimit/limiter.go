@@ -4,6 +4,7 @@ package ratelimit
 
 import (
 	"net/http"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -230,10 +231,15 @@ func (l *Limiter) cleanup() {
 }
 
 // extractIP reads the real client IP from X-Forwarded-For (set by Fly.io) or
-// falls back to RemoteAddr.
+// falls back to RemoteAddr. X-Forwarded-For may contain a comma-separated list
+// (client, proxy1, proxy2); we take only the leftmost value (the real client).
 func extractIP(r *http.Request) string {
 	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		return xff
+		// Take only the first entry in the potentially comma-separated list.
+		if idx := strings.IndexByte(xff, ','); idx != -1 {
+			return strings.TrimSpace(xff[:idx])
+		}
+		return strings.TrimSpace(xff)
 	}
 	ip := r.RemoteAddr
 	// Strip port if present.

@@ -50,7 +50,7 @@ type Logger struct {
 
 // New creates and starts a Logger. Call Close when the server shuts down.
 func New(basePath, nodeID, region string) *Logger {
-	if err := os.MkdirAll(filepath.Join(basePath, logDir), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(basePath, logDir), 0750); err != nil {
 		fmt.Fprintf(os.Stderr, "[audit] failed to create log dir: %v\n", err)
 	}
 	l := &Logger{
@@ -120,7 +120,7 @@ func (l *Logger) write(e Event) {
 	}
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	f, err := os.OpenFile(l.logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(l.logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0640)
 	if err != nil {
 		return
 	}

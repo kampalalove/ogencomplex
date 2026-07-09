@@ -11,7 +11,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/kampalalove/ogencomplex/audit"
 	"github.com/kampalalove/ogencomplex/cache"
@@ -124,18 +123,18 @@ func securityMiddleware(next http.Handler) http.Handler {
 // metricsMiddleware records each request in the collector.
 func metricsMiddleware(col *metrics.Collector, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
 		rw := &captureWriter{ResponseWriter: w, statusCode: http.StatusOK}
 		next.ServeHTTP(rw, r)
 		col.RecordRequest()
 		if rw.statusCode >= 400 {
 			col.RecordError()
 		}
-		_ = start // latency tracked inside ingest handler
 	})
 }
 
-// captureWriter records the first status code written.
+// captureWriter records the first status code written for metrics tracking.
+// It does not override Write so that data flows directly to the underlying
+// ResponseWriter without an extra passthrough path.
 type captureWriter struct {
 	http.ResponseWriter
 	statusCode int
@@ -148,13 +147,6 @@ func (cw *captureWriter) WriteHeader(code int) {
 		cw.written = true
 		cw.ResponseWriter.WriteHeader(code)
 	}
-}
-
-func (cw *captureWriter) Write(b []byte) (int, error) {
-	if !cw.written {
-		cw.WriteHeader(http.StatusOK)
-	}
-	return cw.ResponseWriter.Write(b)
 }
 
 // --- Helpers ---

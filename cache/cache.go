@@ -170,7 +170,7 @@ func (c *Cache) loadFromDisk(systemID string) (*models.SystemProfile, error) {
 
 func (c *Cache) writeToDisk(profile *models.SystemProfile) error {
 	dir := filepath.Join(c.basePath, indexDir)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0750); err != nil {
 		return err
 	}
 	path := filepath.Join(dir, fmt.Sprintf("%s.json", profile.SystemID))
@@ -178,5 +178,5 @@ func (c *Cache) writeToDisk(profile *models.SystemProfile) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, data, 0644)
+	return os.WriteFile(path, data, 0640)
 }

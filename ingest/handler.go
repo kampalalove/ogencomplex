@@ -38,12 +38,19 @@ func NewHandler(basePath string) (*Handler, error) {
 }
 
 // validateSystemID rejects values that could cause path traversal or that
-// contain characters invalid for a JSON file name component.
+// contain characters invalid for a JSON file name component. It also blocks
+// URL-encoded sequences that could normalise to dangerous paths.
 func validateSystemID(id string) error {
 	if id == "" {
 		return fmt.Errorf("system_id is empty")
 	}
 	if strings.Contains(id, "..") || strings.ContainsAny(id, "/\\<>\x00") {
+		return fmt.Errorf("system_id contains invalid characters")
+	}
+	// Block URL-encoded sequences that could decode to traversal characters.
+	lower := strings.ToLower(id)
+	if strings.Contains(lower, "%2e") || strings.Contains(lower, "%2f") ||
+		strings.Contains(lower, "%5c") || strings.Contains(lower, "%00") {
 		return fmt.Errorf("system_id contains invalid characters")
 	}
 	return nil
@@ -74,8 +81,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := validateSystemID(systemID); err != nil {
-			rw.WriteHeader(http.StatusBadRequest)
-			rw.Write([]byte(fmt.Sprintf(`{"status":"FAILED","error":"%s"}`, err.Error())))
+			h.sendError(rw, http.StatusBadRequest, err.Error())
 			h.emitAudit(r, rw.statusCode, time.Since(start), systemID, "", false)
 			return
 		}
@@ -83,13 +89,10 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// Try cache first; fall back to disk.
 		if h.Cache != nil {
 			if profile, ok := h.Cache.Get(systemID); ok {
-				data, err := json.Marshal(profile)
-				if err == nil {
-					rw.WriteHeader(http.StatusOK)
-					rw.Write(data)
-					h.emitAudit(r, rw.statusCode, time.Since(start), systemID, "", true)
-					return
-				}
+				rw.WriteHeader(http.StatusOK)
+				json.NewEncoder(rw).Encode(profile)
+				h.emitAudit(r, rw.statusCode, time.Since(start), systemID, "", true)
+				return
 			}
 		}
 
@@ -99,11 +102,9 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		data, err := os.ReadFile(profilePath)
 		if err != nil {
 			if os.IsNotExist(err) {
-				rw.WriteHeader(http.StatusNotFound)
-				rw.Write([]byte(fmt.Sprintf(`{"status":"FAILED","error":"System profile not found for target: %s"}`, systemID)))
+				h.sendError(rw, http.StatusNotFound, "System profile not found for target: "+systemID)
 			} else {
-				rw.WriteHeader(http.StatusInternalServerError)
-				rw.Write([]byte(fmt.Sprintf(`{"status":"FAILED","error":"Internal server error: %s"}`, err.Error())))
+				h.sendError(rw, http.StatusInternalServerError, "Internal read error")
 			}
 			h.emitAudit(r, rw.statusCode, time.Since(start), systemID, "", false)
 			return
@@ -229,9 +230,14 @@ func (h *Handler) emitAudit(r *http.Request, status int, latency time.Duration, 
 }
 
 // extractIP reads the real client IP from X-Forwarded-For or RemoteAddr.
+// X-Forwarded-For may be a comma-separated list (client, proxy1, proxy2);
+// only the leftmost value (the real client IP) is used.
 func extractIP(r *http.Request) string {
 	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		return xff
+		if idx := strings.IndexByte(xff, ','); idx != -1 {
+			return strings.TrimSpace(xff[:idx])
+		}
+		return strings.TrimSpace(xff)
 	}
 	ip := r.RemoteAddr
 	for i := len(ip) - 1; i >= 0; i-- {
@@ -243,7 +249,8 @@ func extractIP(r *http.Request) string {
 }
 
 // responseWriter wraps http.ResponseWriter to capture the status code for audit
-// logging and metrics.
+// logging and metrics. All write paths in ServeHTTP call WriteHeader explicitly
+// so we do not need to override Write.
 type responseWriter struct {
 	http.ResponseWriter
 	statusCode int
@@ -256,11 +263,4 @@ func (rw *responseWriter) WriteHeader(code int) {
 		rw.written = true
 		rw.ResponseWriter.WriteHeader(code)
 	}
-}
-
-func (rw *responseWriter) Write(b []byte) (int, error) {
-	if !rw.written {
-		rw.WriteHeader(http.StatusOK)
-	}
-	return rw.ResponseWriter.Write(b)
 }// Build Token: 20260709035146
