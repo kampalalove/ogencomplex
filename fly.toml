@@ -1,5 +1,5 @@
 app = "cortex-parser"
-primary_region = "phx"
+primary_region = "lax"
 
 [http_service]
   internal_port = 3000
