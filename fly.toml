@@ -1,14 +1,32 @@
-app = "cortex-parser"
-primary_region = "lax"
+# fly.toml app configuration file generated for ogencomplex on 2026-07-09T02:59:36-04:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'ogencomplex'
+primary_region = 'ewr'
+
+[build]
+  dockerfile = 'Dockerfile'
+
+[env]
+  PORT = '3000'
 
 [http_service]
   internal_port = 3000
   force_https = true
-  auto_stop_machines = "stop"
+  auto_stop_machines = 'stop'
   auto_start_machines = true
   min_machines_running = 0
-  processes = ["app"]
 
-[[vm]]
-  size = "shared-cpu-1x"
-  memory = "256mb"
+[[services]]
+  protocol = 'tcp'
+  internal_port = 3000
+
+  [[services.ports]]
+    port = 80
+    handlers = ['http']
+
+  [[services.ports]]
+    port = 443
+    handlers = ['tls', 'http']
