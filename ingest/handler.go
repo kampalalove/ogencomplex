@@ -29,6 +29,22 @@ PolicyEnforcer: enforcer,
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+// --- HEALTH CHECK GET ROUTE ---
+if r.Method == http.MethodGet {
+w.Header().Set("Content-Type", "application/json")
+w.WriteHeader(http.StatusOK)
+response := map[string]interface{}{
+"status":      "ONLINE",
+"cluster":     "universe.index",
+"timestamp":   time.Now().UTC().Format(time.RFC3339),
+"sovereign":   true,
+"environment": "edge-lax",
+}
+json.NewEncoder(w).Encode(response)
+return
+}
+
+// --- INGESTION POST ROUTE ---
 if r.Method != http.MethodPost {
 http.Error(w, `{"status":"FAILED","error":"Method not allowed"}`, http.StatusMethodNotAllowed)
 return
