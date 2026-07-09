@@ -1,0 +1,55 @@
+{
+  "system_id": "aquila-core",
+  "name": "Aquila Core",
+  "version": "0.0.1",
+  "layers": {
+    "authority": {
+      "source_of_truth": "local_disk",
+      "schema_defined": true,
+      "stack_type": "child",
+      "parent_system_id": null,
+      "children": []
+    },
+    "logic": {
+      "runtime": "N/A",
+      "dependencies": [],
+      "entry_point": "N/A"
+    },
+    "transport": {
+      "deployment_target": "local_host",
+      "pipeline": "manual",
+      "repo_url": null
+    },
+    "telemetry": {
+      "has_logging": false,
+      "monitoring_method": "N/A",
+      "health_endpoint": null
+    },
+    "sovereignty": {
+      "is_air_gapped": false,
+      "closure_state": "active_build",
+      "content_hash": null,
+      "last_verified": null,
+      "invariant_version": "1.1"
+    }
+  },
+  "topology": {
+    "local_paths": [],
+    "ai_fragments": [
+      {
+        "platform": "Gemini",
+        "url": null,
+        "thread_id": null,
+        "context_summary": "Production telemetry payload",
+        "last_sync_timestamp": "2026-07-09T10:06:39Z",
+        "sha256_of_export": null
+      }
+    ]
+  },
+  "state_telemetry": {
+    "drift_detected": false,
+    "open_loops_count": 0,
+    "last_updated": "2026-07-09T10:06:39Z",
+    "quarantine_reason": null
+  }
+}
