@@ -22,13 +22,16 @@ if err != nil {
 log.Fatalf("Failed to initialize ingestion handler: %s", err)
 }
 
+// Route everything through the dual-mode package handler
 http.Handle("/", handler)
 
-port := "8080"
-serverAddr := "127.0.0.1:" + port
+port := os.Getenv("PORT")
+if port == "" {
+port = "3000"
+}
+serverAddr := "0.0.0.0:" + port
 
-fmt.Printf("🚀 Local Consensus Webhook running securely on http://%s\n", serverAddr)
-fmt.Println("Press Ctrl+C to terminate runtime engine.")
+fmt.Printf("🚀 Active Sovereignty Cluster running on http://%s\n", serverAddr)
 
 sigChan := make(chan os.Signal, 1)
 signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
