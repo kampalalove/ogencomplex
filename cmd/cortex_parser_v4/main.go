@@ -14,7 +14,7 @@ import (
 func main() {
 basePath, err := os.Getwd()
 if err != nil {
-log.Fatalf("Failed to get working directory: %s", err", err)
+log.Fatalf("Failed to get working directory: %s", err)
 }
 
 handler, err := ingest.NewHandler(basePath)
@@ -24,7 +24,7 @@ log.Fatalf("Failed to initialize ingestion handler: %s", err)
 
 http.Handle("/", handler)
 
-port := "3000" // Matches internal_port defined in your production fly.toml
+port := "3000" // Aligns perfectly with the container layout in fly.toml
 serverAddr := "0.0.0.0:" + port
 
 fmt.Printf("🚀 Local Consensus Webhook running securely on http://%s\n", serverAddr)
