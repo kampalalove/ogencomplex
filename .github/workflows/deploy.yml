@@ -1,4 +1,4 @@
-name: Deploy Project-B
+name: Deploy Project-C
 
 on:
   push:
@@ -8,5 +8,5 @@ jobs:
   deploy:
     uses: kampalalove/ogencomplex/.github/workflows/central-deploy.yml@master
     with:
-      project-name: project-b
+      project-name: project-c
       environment: production
