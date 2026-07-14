@@ -1,0 +1,12 @@
+name: Deploy Project-B
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    uses: kampalalove/ogencomplex/.github/workflows/central-deploy.yml@master
+    with:
+      project-name: project-b
+      environment: production
