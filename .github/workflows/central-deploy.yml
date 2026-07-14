@@ -1,4 +1,4 @@
-﻿name: Central Deploy Workflow
+name: Central Deploy Workflow
 
 on:
   workflow_call:
@@ -17,7 +17,7 @@ jobs:
       - name: Checkout project
         uses: actions/checkout@v4
         with:
-          repository: my-org/${{ inputs.project-name }}
+          repository: kampalalove/${{ inputs.project-name }}
           path: ${{ inputs.project-name }}
 
       - name: Run FixCord Diagnostics
@@ -35,4 +35,8 @@ jobs:
       - name: Deploy
         run: |
           cd ${{ inputs.project-name }}
+          # Replace this with your actual deployment command
+          # Example: npm run deploy
+          # Example: rsync -avz ./dist/ user@server:/var/www/${{ inputs.project-name }}/
+          # Example: aws s3 sync ./build/ s3://my-bucket/${{ inputs.project-name }}/
           echo "Deploying ${{ inputs.project-name }} to ${{ inputs.environment }}"
