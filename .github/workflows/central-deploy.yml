@@ -39,4 +39,4 @@ jobs:
           # Example: npm run deploy
           # Example: rsync -avz ./dist/ user@server:/var/www/${{ inputs.project-name }}/
           # Example: aws s3 sync ./build/ s3://my-bucket/${{ inputs.project-name }}/
-          echo "Deploying ${{ inputs.project-name }} to ${{ inputs.environment }}"
+          npm run deploy
