@@ -10,13 +10,4 @@ primary_region = "iad"
   min_machines_running = 0
 [env]
   NODE_ENV = "production"
-[services]
-  [services.concurrency]
-    type = "connections"
-    hard_limit = 25
-    soft_limit = 20
-  [services.ports]
-    handlers = ["http"]
-    port = 80
-    [services.ports.tls_options]
-      alpn = ["h2", "http/1.1"]
+  PORT = "8080"
