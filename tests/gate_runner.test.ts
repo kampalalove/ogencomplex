@@ -54,10 +54,31 @@ describe('Gate Runner', () => {
   });
 
   describe('Gate 4 - Temporal Window', () => {
-    it('checks year is 2026', () => {
-      const result = gate4_temporalWindow();
-      const currentYear = new Date().getFullYear();
-      expect(result.passed).toBe(currentYear === 2026);
+    afterEach(() => {
+      delete process.env.OGEN_TEMPORAL_MIN_YEAR;
+      delete process.env.OGEN_TEMPORAL_MAX_YEAR;
+    });
+
+    it('passes for the current year under default bounds', () => {
+      expect(gate4_temporalWindow().passed).toBe(true);
+    });
+
+    it('fails when the clock is before the window', () => {
+      process.env.OGEN_TEMPORAL_MIN_YEAR = '9998';
+      process.env.OGEN_TEMPORAL_MAX_YEAR = '9999';
+      expect(gate4_temporalWindow().passed).toBe(false);
+    });
+
+    it('fails when the clock is after the window', () => {
+      process.env.OGEN_TEMPORAL_MIN_YEAR = '1970';
+      process.env.OGEN_TEMPORAL_MAX_YEAR = '1971';
+      expect(gate4_temporalWindow().passed).toBe(false);
+    });
+
+    it('falls back to defaults on unparseable bounds', () => {
+      process.env.OGEN_TEMPORAL_MIN_YEAR = 'not-a-year';
+      process.env.OGEN_TEMPORAL_MAX_YEAR = 'also-not';
+      expect(gate4_temporalWindow().passed).toBe(true);
     });
   });
 
@@ -88,13 +109,7 @@ describe('Gate Runner', () => {
       const expectedHash = hashPayload(params as unknown as Record<string, unknown>);
       const result = runAllGates(params, expectedHash, 75);
 
-      // Gate 4 depends on current year being 2026
-      const year = new Date().getFullYear();
-      if (year === 2026) {
-        expect(result.allPassed).toBe(true);
-      } else {
-        expect(result.allPassed).toBe(false);
-      }
+      expect(result.allPassed).toBe(true);
     });
   });
 });

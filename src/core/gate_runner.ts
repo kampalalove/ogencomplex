@@ -76,16 +76,33 @@ export const gate3_payloadHash = (
   };
 };
 
+/** Earliest plausible year: the project did not exist before this. */
+export const TEMPORAL_MIN_YEAR = 2026;
+
+/**
+ * Latest plausible year. Guards against a clock set far into the future.
+ * Override with OGEN_TEMPORAL_MAX_YEAR when the deployment outlives this.
+ */
+export const TEMPORAL_MAX_YEAR = 2035;
+
+const parseYearEnv = (raw: string | undefined, fallback: number): number => {
+  if (raw === undefined) return fallback;
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
 export const gate4_temporalWindow = (): GateResult => {
   const year = new Date().getFullYear();
-  const passed = year === 2026;
+  const min = parseYearEnv(process.env.OGEN_TEMPORAL_MIN_YEAR, TEMPORAL_MIN_YEAR);
+  const max = parseYearEnv(process.env.OGEN_TEMPORAL_MAX_YEAR, TEMPORAL_MAX_YEAR);
+  const passed = year >= min && year <= max;
   return {
     gate: 4,
     name: 'Temporal Window',
     passed,
     reason: passed
-      ? 'Temporal window: 2026 confirmed'
-      : `Temporal window failed: Year is ${year}. Must be 2026.`,
+      ? `Temporal window: ${year} within [${min}, ${max}]`
+      : `Temporal window failed: Year is ${year}. Must be within [${min}, ${max}].`,
   };
 };
 
