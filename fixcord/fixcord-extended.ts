@@ -6,6 +6,20 @@ import child_process from "child_process";
 
 type CheckResult = { status: "PASS" | "FAIL"; reason?: string; fix?: string };
 
+/**
+ * Derive a human-readable label from a check function's name so failures
+ * identify themselves. "checkPkgMainExists" -> "Pkg Main Exists".
+ * Falls back to the raw name if a bundler mangles it.
+ */
+function describeCheck(fn: (p: string) => CheckResult): string {
+  const raw = fn.name || "unnamed check";
+  const stripped = raw.replace(/^check/, "");
+  if (stripped.length === 0) return raw;
+  return stripped
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2");
+}
+
 function runDiagnostics(targetPath: string) {
   const absPath = path.resolve(targetPath);
   const results: CheckResult[] = [];
@@ -63,17 +77,20 @@ function runDiagnostics(targetPath: string) {
     checkNodeEnv,
   ];
 
+  const named: { name: string; result: CheckResult }[] = [];
   for (const check of checks) {
-    results.push(check(absPath));
+    named.push({ name: describeCheck(check), result: check(absPath) });
   }
+  results.push(...named.map((n) => n.result));
 
   // Output summary
   let failures = results.filter((r) => r.status === "FAIL").length;
   console.log(`Diagnostic run on: ${absPath}`);
   console.log("──────────────────────────────────────────────");
-  results.forEach((r, idx) => {
+  named.forEach((n, idx) => {
+    const r = n.result;
     const icon = r.status === "PASS" ? "✔" : "✘";
-    console.log(`[${icon}] Check ${idx + 1}`);
+    console.log(`[${icon}] Check ${String(idx + 1).padStart(2, " ")} — ${n.name}`);
     if (r.reason) console.log(`    Reason: ${r.reason}`);
     if (r.fix) console.log(`    Fix:    ${r.fix}`);
   });
