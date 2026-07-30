@@ -8,7 +8,7 @@
 
 import express, { Request, Response } from 'express';
 import path from 'path';
-import { hashPayload, createReceipt } from './core/keys/vault';
+import { createReceipt } from './core/keys/vault';
 import { runAllGates, TrackParams } from './core/gate_runner';
 import { synthesize, SynthParams } from './core/synth';
 import { createSignedContract, ContractTerms } from './core/money/contract';
@@ -49,8 +49,11 @@ app.post('/api/generate', (req: Request, res: Response) => {
       rightsCleared = true,
       caCompliant = true,
       splitPercentage = 80,
-      temperature = 75,
     } = req.body;
+
+    // Gate 3 input: the caller's own hash of the track params. Must come from
+    // the request, never from a server-side recomputation of the same values.
+    const claimedHash = req.get('x-payload-hash');
 
     // Validate seed exists
     if (seed === undefined || seed === null || typeof seed !== 'number') {
@@ -69,11 +72,8 @@ app.post('/api/generate', (req: Request, res: Response) => {
       tempo,
     };
 
-    // Compute expected hash for gate 3
-    const expectedHash = hashPayload(trackParams as unknown as Record<string, unknown>);
-
-    // Run all 5 gates
-    const gateResult = runAllGates(trackParams, expectedHash, temperature);
+    // Run all 4 gates
+    const gateResult = runAllGates(trackParams, claimedHash);
 
     if (!gateResult.allPassed) {
       const failedGates = gateResult.gates.filter((g) => !g.passed);
