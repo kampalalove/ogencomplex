@@ -1,5 +1,5 @@
 app = "ogencomplex"
-primary_region = "phx"
+primary_region = "iad"
 kill_signal = "SIGINT"
 kill_timeout = 5
 
