@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>SOW Signer - VMO/OGEN Lab</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, sans-serif;
+            background: #f5f7fb;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        .card {
+            background: white;
+            border-radius: 28px;
+            padding: 24px 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        h1 {
+            font-size: 1.75rem;
+            margin: 0 0 4px 0;
+        }
+        .subhead {
+            color: #5e6f8d;
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #e9edf2;
+            padding-bottom: 12px;
+        }
+        .field {
+            margin-bottom: 18px;
+        }
+        label {
+            font-weight: 600;
+            font-size: 0.8rem;
+            display: block;
+            margin-bottom: 6px;
+            color: #1f2a44;
+        }
+        input, select {
+            width: 100%;
+            padding: 14px;
+            font-size: 1rem;
+            border: 1px solid #ccd4e0;
+            border-radius: 14px;
+            background: white;
+            font-family: inherit;
+        }
+        .flex-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .flex-row .field {
+            flex: 1;
+        }
+        .sign-pad {
+            border: 2px dashed #3b82f6;
+            border-radius: 20px;
+            background: #fafcff;
+            margin: 12px 0;
+            touch-action: none;
+        }
+        canvas {
+            width: 100%;
+            height: auto;
+            background: white;
+            border-radius: 16px;
+            display: block;
+        }
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin: 8px 0 16px;
+        }
+        button {
+            flex: 1;
+            padding: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 40px;
+            background: #eef2ff;
+            color: #1f2a44;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        button.primary {
+            background: #1f2a44;
+            color: white;
+        }
+        button.danger {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+        button.success {
+            background: #2c6e2c;
+            color: white;
+        }
+        .signature-status {
+            font-size: 0.75rem;
+            color: #2c6e2c;
+            margin-top: 4px;
+            display: none;
+        }
+        .link-box {
+            background: #f0f4f9;
+            padding: 12px;
+            border-radius: 16px;
+            margin-top: 16px;
+            word-break: break-all;
+            font-size: 0.8rem;
+        }
+        hr {
+            margin: 20px 0;
+            border: none;
+            border-top: 1px solid #e9edf2;
+        }
+        .footer {
+            text-align: center;
+            font-size: 0.7rem;
+            color: #8a99b4;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="card">
+        <h1>✍️ SOW Signature Tool</h1>
+        <div class="subhead">VMO / OGEN Lab · Municipal Infrastructure Triage Audit · $50,000 USD</div>
+
+        <!-- 1. Municipality Details -->
+        <div class="flex-row">
+            <div class="field">
+                <label>CFO / TREASURER FULL NAME</label>
+                <input type="text" id="cfoName" placeholder="e.g. Jane Rodriguez">
+            </div>
+            <div class="field">
+                <label>CFO TITLE</label>
+                <input type="text" id="cfoTitle" placeholder="Chief Financial Officer">
+            </div>
+        </div>
+        <div class="flex-row">
+            <div class="field">
+                <label>CITY / MUNICIPALITY</label>
+                <input type="text" id="city" placeholder="e.g. Youngstown, OH">
+            </div>
+            <div class="field">
+                <label>EXECUTION DATE</label>
+                <input type="date" id="execDate">
+            </div>
+        </div>
+        <div class="field">
+            <button id="genLinkBtn" class="primary">🔗 Generate pre‑filled link to send to CFO</button>
+            <div id="linkContainer" class="link-box" style="display: none;"></div>
+        </div>
+    </div>
+
+    <!-- 2. Contractor Signature -->
+    <div class="card">
+        <h2>2. Contractor Signature (You)</h2>
+        <div class="sign-pad">
+            <canvas id="contractorCanvas" width="600" height="150" style="aspect-ratio:600/150"></canvas>
+        </div>
+        <div class="btn-group">
+            <button id="clearContractorBtn" class="danger">🗑 Clear</button>
+            <button id="saveContractorBtn" class="success">✅ Save contractor signature</button>
+        </div>
+        <div id="contractorStatus" class="signature-status">✓ Signature saved</div>
+    </div>
+
+    <!-- 3. CFO Signature -->
+    <div class="card">
+        <h2>3. CFO Signature</h2>
+        <p style="font-size:0.8rem; color:#5e6f8d;">Hand device to CFO to sign, or sign on their behalf if authorized.</p>
+        <div class="sign-pad">
+            <canvas id="cfoCanvas" width="600" height="150" style="aspect-ratio:600/150"></canvas>
+        </div>
+        <div class="btn-group">
+            <button id="clearCfoBtn" class="danger">🗑 Clear</button>
+            <button id="saveCfoBtn" class="success">✅ Save CFO signature</button>
+        </div>
+        <div id="cfoStatus" class="signature-status">✓ Signature saved</div>
+    </div>
+
+    <!-- 4. Generate Signed SOW -->
+    <div class="card">
+        <h2>4. Generate Signed SOW</h2>
+        <button id="generateBtn" class="primary" style="background:#2c6e2c;">📄 Open signed SOW → Print / Save as PDF</button>
+        <p class="footer" style="margin-top:16px;">iOS: tap Share → Print → pinch-zoom PDF thumbnail → Share → Save to Files</p>
+    </div>
+</div>
+
+<script>
+    // ---------- signature pad setup (with save status) ----------
+    function setupSignaturePad(canvasId, clearBtnId, saveBtnId, statusId) {
+        const canvas = document.getElementById(canvasId);
+        const ctx = canvas.getContext('2d');
+        let drawing = false;
+        let savedData = localStorage.getItem(canvasId) || null;
+
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            const width = Math.min(600, container.clientWidth - 20);
+            canvas.style.width = `${width}px`;
+            canvas.width = width;
+            canvas.height = 150;
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            if (savedData) {
+                const img = new Image();
+                img.onload = () => {
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    document.getElementById(statusId).style.display = 'block';
+                };
+                img.src = savedData;
+            }
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function getCoords(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            let clientX, clientY;
+            if (e.touches) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+            let x = (clientX - rect.left) * scaleX;
+            let y = (clientY - rect.top) * scaleY;
+            x = Math.max(0, Math.min(canvas.width, x));
+            y = Math.max(0, Math.min(canvas.height, y));
+            return { x, y };
+        }
+
+        function startDraw(e) {
+            drawing = true;
+            const { x, y } = getCoords(e);
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            e.preventDefault();
+        }
+        function draw(e) {
+            if (!drawing) return;
+            const { x, y } = getCoords(e);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            e.preventDefault();
+        }
+        function stopDraw() { drawing = false; }
+
+        canvas.addEventListener('touchstart', startDraw);
+        canvas.addEventListener('touchmove', draw);
+        canvas.addEventListener('touchend', stopDraw);
+        canvas.addEventListener('mousedown', startDraw);
+        canvas.addEventListener('mousemove', (e) => { if (drawing) draw(e); });
+        window.addEventListener('mouseup', stopDraw);
+
+        document.getElementById(clearBtnId).addEventListener('click', () => {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            savedData = null;
+            localStorage.removeItem(canvasId);
+            document.getElementById(statusId).style.display = 'none';
+        });
+
+        document.getElementById(saveBtnId).addEventListener('click', () => {
+            const data = canvas.toDataURL('image/png');
+            savedData = data;
+            localStorage.setItem(canvasId, data);
+            document.getElementById(statusId).style.display = 'block';
+        });
+
+        return {
+            getSignature: () => savedData || canvas.toDataURL('image/png')
+        };
+    }
+
+    const contractorSig = setupSignaturePad('contractorCanvas', 'clearContractorBtn', 'saveContractorBtn', 'contractorStatus');
+    const cfoSig = setupSignaturePad('cfoCanvas', 'clearCfoBtn', 'saveCfoBtn', 'cfoStatus');
+
+    // pre-filled link generator
+    document.getElementById('genLinkBtn').addEventListener('click', () => {
+        const params = new URLSearchParams();
+        const cfoName = document.getElementById('cfoName').value;
+        const cfoTitle = document.getElementById('cfoTitle').value;
+        const city = document.getElementById('city').value;
+        const execDate = document.getElementById('execDate').value;
+        if (cfoName) params.set('cfoName', cfoName);
+        if (cfoTitle) params.set('cfoTitle', cfoTitle);
+        if (city) params.set('city', city);
+        if (execDate) params.set('execDate', execDate);
+        const url = window.location.href.split('?')[0] + (params.toString() ? '?' + params.toString() : '');
+        const linkBox = document.getElementById('linkContainer');
+        linkBox.innerHTML = `🔗 <a href="${url}" target="_blank">Tap to open pre-filled link</a><br><span style="font-size:0.7rem;">${url}</span>`;
+        linkBox.style.display = 'block';
+    });
+
+    // load pre-filled from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('cfoName')) document.getElementById('cfoName').value = urlParams.get('cfoName');
+    if (urlParams.has('cfoTitle')) document.getElementById('cfoTitle').value = urlParams.get('cfoTitle');
+    if (urlParams.has('city')) document.getElementById('city').value = urlParams.get('city');
+    if (urlParams.has('execDate')) document.getElementById('execDate').value = urlParams.get('execDate');
+
+    // generate signed SOW
+    document.getElementById('generateBtn').addEventListener('click', () => {
+        const cfoName = document.getElementById('cfoName').value.trim() || '[CFO Name]';
+        const cfoTitle = document.getElementById('cfoTitle').value.trim() || 'CFO/Treasurer';
+        const city = document.getElementById('city').value.trim() || '[City]';
+        const execDate = document.getElementById('execDate').value || new Date().toISOString().slice(0,10);
+        
+        const contractorSigData = contractorSig.getSignature();
+        const cfoSigData = cfoSig.getSignature();
+        
+        if (!contractorSigData || contractorSigData === 'data:image/png;base64,') {
+            alert('Please save your contractor signature first (tap "Save contractor signature").');
+            return;
+        }
+        if (!cfoSigData || cfoSigData === 'data:image/png;base64,') {
+            alert('Please save CFO signature first (tap "Save CFO signature").');
+            return;
+        }
+
+        const authId = `VMO-SOW-${new Date().getFullYear()}-${Math.floor(Math.random()*10000).toString().padStart(4,'0')}`;
+        
+        const fullSOW = `<!DOCTYPE html>
+        <html>
+        <head><meta charset="UTF-8"><title>SOW_${city}_${execDate}</title>
+        <style>
+            body { font-family: Helvetica, Arial, sans-serif; margin: 40px; line-height: 1.4; }
+            h1 { font-size: 1.8rem; }
+            h2 { margin-top: 28px; }
+            .clause { margin: 20px 0; }
+            .sign-box { margin-top: 40px; border-top: 1px solid #ccc; padding-top: 20px; }
+            .sig-img { max-width: 280px; border: 1px solid #aaa; padding: 8px; background: white; margin-top: 8px; }
+            .field { margin: 12px 0; }
+            .legal { font-size: 0.8rem; color: #555; margin-top: 40px; }
+            table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+            th, td { border: 1px solid #aaa; padding: 8px; text-align: left; vertical-align: top; }
+            th { background: #f5f5f5; }
+        </style>
+        </head>
+        <body>
+        <h1>STATEMENT OF WORK<br>Infrastructure Triage & Asset Optimization Audit</h1>
+        <p><strong>Prepared By:</strong> VMO / OGEN Lab<br>
+        <strong>For:</strong> Office of the CFO / Treasurer, ${city}<br>
+        <strong>Total Fee:</strong> $50,000 USD<br>
+        <strong>Authorization ID:</strong> ${authId}<br>
+        <strong>Effective Date:</strong> ${execDate}</p>
+
+        <div class="clause">
+            <h2>1. Objective & Scope</h2>
+            <p>The Contractor will deliver an independent, block-level financial liability and infrastructure asset exposure analysis isolating municipal expenditure anomalies where infrastructure maintenance costs outpace real estate tax yield. This engagement is strictly analytical and advisory. The Contractor will not touch land titles, file municipal permits, or assume operational liability for city assets.</p>
+
+            <h2>2. Phase 1: Data Integration (Weeks 1–3)</h2>
+            <p><strong>2.1 Local Ingestion:</strong> Manual aggregation of GIS parcel data, utility maintenance logs, and county assessor tax rolls.<br>
+            <strong>2.2 Error Scrubbing:</strong> Manual validation of historical indicators to eliminate data discrepancies.<br>
+            <strong>2.3 Data Access Provision:</strong> Municipality must provide all required data within 5 business days of signing. Delays extend timeline day-for-day.</p>
+
+            <h2>3. Phase 2: Block-Level ROI Modeling & Delivery (Weeks 4–6)</h2>
+            <p><strong>3.1 Spatial Cost-Benefit Matrix:</strong> QGIS mapping of negative-yield blocks (utility maintenance cost per linear foot exceeds property tax revenue).<br>
+            <strong>3.2 The Triage Playbook:</strong> Delivery of data-backed strategy report including target zones for infrastructure de-escalation and bond rating defense metrics.</p>
+
+            <h2>4. Deliverables & Acceptance Criteria</h2>
+            <table>
+                <thead><tr><th>ID</th><th>Deliverable</th><th>Format</th><th>Acceptance Criteria</th><th>Sign-off Authority</th></tr></thead>
+                <tbody>
+                    <tr><td>D1</td><td>Block-Level Infrastructure ROI Map</td><td>Shapefile/GeoJSON</td><td>Zero unmapped segments, correctly rendered</td><td>CFO</td></tr>
+                    <tr><td>D2</td><td>Executive Fiscal Contraction Playbook</td><td>PDF</td><td>Includes capping zones + bond defense metrics</td><td>CFO</td></tr>
+                </tbody>
+            </table>
+            <p><strong>Payment Trigger:</strong> Total invoice ($50,000 USD) becomes due Net 15 only upon explicit, written sign-off of both D1 and D2 by CFO. No partial or automated invoicing.</p>
+
+            <h2>5. Legal Terms & Liability Shield</h2>
+            <p><strong>Limitation of Liability:</strong> This audit is strictly an analytical and advisory service. Municipality retains all operational liability, decision-making authority, and legal execution risk. Contractor provides no legal or binding municipal bond underwriting opinions. All actions taken based on this data are executed solely at the discretion and liability of the Municipality.</p>
+        </div>
+
+        <div class="sign-box">
+            <h2>Municipality (CFO / Treasurer)</h2>
+            <div class="field">Name: ${cfoName}</div>
+            <div class="field">Title: ${cfoTitle}</div>
+            <div class="field">Date: ${execDate}</div>
+            <div class="field">City: ${city}</div>
+            <div class="field">Signature:</div>
+            <img class="sig-img" src="${cfoSigData}" alt="CFO signature">
+            
+            <hr>
+            <h2>Contractor (VMO / OGEN Lab)</h2>
+            <div class="field">Name: [Your Name]</div>
+            <div class="field">Title: Founder & Lead Architect</div>
+            <div class="field">Date: ${execDate}</div>
+            <div class="field">Signature:</div>
+            <img class="sig-img" src="${contractorSigData}" alt="Contractor signature">
+        </div>
+        <div class="legal">
+            This document incorporates by reference the full SOW terms. Both parties agree this signed PDF constitutes an enforceable agreement.<br>
+            Authorization ID: ${authId}
+        </div>
+        </body>
+        </html>`;
+
+        // Open in new tab (iOS friendly)
+        const win = window.open();
+        win.document.write(fullSOW);
+        win.document.close();
+        win.focus();
+        setTimeout(() => {
+            win.print();
+        }, 500);
+    });
+</script>
+</body>
+</html>
