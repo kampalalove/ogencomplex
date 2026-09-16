@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Veritas Advisory System</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: system-ui; max-width: 800px; margin: 2rem auto; padding: 1rem; }
+    textarea { width: 100%; height: 150px; font-family: monospace; }
+    button { margin-top: 0.5rem; padding: 0.5rem 1rem; }
+    pre { background: #f4f4f4; padding: 1rem; overflow-x: auto; }
+    .error { color: red; }
+    .success { color: green; }
+    input { width: 100%; margin: 0.5rem 0; padding: 0.3rem; }
+    table { width: 100%; }
+  </style>
+</head>
+<body>
+  <h1>Veritas Advisory System</h1>
+  <div>
+    <label>Worker URL:</label>
+    <input id="workerUrl" style="font-family: monospace;">
+  </div>
+  <div>
+    <label>API Key:</label>
+    <input type="password" id="apiKey" placeholder="Enter your API key" style="font-family: monospace;">
+  </div>
+  <div>
+    <label>Payload (JSON):</label>
+    <textarea id="payload" placeholder='{"temperature": 95, "pressure": 130, "humidity": 88}'></textarea>
+  </div>
+  <div>
+    <button id="submitBtn">Get Advice</button>
+    <button id="listRulesBtn">List Rules</button>
+    <button id="saveSettingsBtn">Save Settings</button>
+  </div>
+  <div id="result"></div>
+  <script>
+    const defaultWorkerUrl = 'https://veritas-worker.ogen-veritas.workers.dev';
+    const workerUrlInput = document.getElementById('workerUrl');
+    const apiKeyInput = document.getElementById('apiKey');
+    const payloadText = document.getElementById('payload');
+    const resultDiv = document.getElementById('result');
+    const submitBtn = document.getElementById('submitBtn');
+    const listRulesBtn = document.getElementById('listRulesBtn');
+    const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+
+    workerUrlInput.value = localStorage.getItem('veritas_worker_url') || defaultWorkerUrl;
+    apiKeyInput.value = localStorage.getItem('veritas_api_key') || '';
+    payloadText.value = '{\n  "temperature": 95,\n  "current": 60,\n  "fire_detected": true\n}';
+
+    saveSettingsBtn.onclick = () => {
+      localStorage.setItem('veritas_worker_url', workerUrlInput.value.trim());
+      localStorage.setItem('veritas_api_key', apiKeyInput.value.trim());
+      resultDiv.innerHTML = '<div class="success">Settings saved.</div>';
+    };
+
+    function currentWorkerUrl() {
+      return workerUrlInput.value.trim().replace(/\/$/, '');
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    async function apiCall(endpoint, method, body = null) {
+      const apiKey = apiKeyInput.value.trim();
+      if (!apiKey) {
+        resultDiv.innerHTML = '<div class="error">Please enter your API key.</div>';
+        return null;
+      }
+      const opts = {
+        method,
+        headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' }
+      };
+      if (body) opts.body = JSON.stringify(body);
+      const res = await fetch(`${currentWorkerUrl()}${endpoint}`, opts);
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`${res.status}: ${text}`);
+      }
+      return res.json();
+    }
+
+    submitBtn.onclick = async () => {
+      resultDiv.innerHTML = 'Loading...';
+      try {
+        let payload;
+        try {
+          payload = JSON.parse(payloadText.value);
+        } catch(e) {
+          throw new Error('Invalid JSON payload');
+        }
+        const data = await apiCall('/advise', 'POST', payload);
+        if (data && data.matches) {
+          let html = '<h3>Matches:</h3>';
+          if (data.meta) {
+            html += `<pre>${escapeHtml(JSON.stringify(data.meta, null, 2))}</pre>`;
+          }
+          if (data.matches.length === 0) html += '<p>No matching rules.</p>';
+          else {
+            html += '<ul>';
+            for (const m of data.matches) {
+              const ruleName = m.rule_name || m.rule || 'rule';
+              const action = m.action_text || m.action || '';
+              html += `<li><strong>${escapeHtml(ruleName)}</strong> (${escapeHtml(m.category)}): ${escapeHtml(action)}`;
+              if (m.evidence_url) {
+                html += ` <button data-evidence-url="${escapeHtml(m.evidence_url)}">Evidence</button>`;
+              }
+              html += '</li>';
+            }
+            html += '</ul>';
+          }
+          resultDiv.innerHTML = html;
+          document.querySelectorAll('[data-evidence-url]').forEach(button => {
+            button.onclick = () => openEvidence(button.getAttribute('data-evidence-url'));
+          });
+        } else {
+          resultDiv.innerHTML = '<div class="error">Unexpected response format.</div>';
+        }
+      } catch(err) {
+        resultDiv.innerHTML = `<div class="error">Error: ${escapeHtml(err.message)}</div>`;
+      }
+    };
+
+    async function openEvidence(url) {
+      try {
+        const res = await fetch(url, { headers: { 'X-API-Key': apiKeyInput.value.trim() } });
+        if (!res.ok) throw new Error(await res.text());
+        const blob = await res.blob();
+        window.open(URL.createObjectURL(blob), '_blank', 'noopener');
+      } catch (err) {
+        resultDiv.innerHTML += `<div class="error">Evidence error: ${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    listRulesBtn.onclick = async () => {
+      resultDiv.innerHTML = 'Loading rules...';
+      try {
+        const data = await apiCall('/rules', 'GET');
+        if (data && data.rules) {
+          let html = '<h3>Active Rules:</h3><table border="1" cellpadding="5" style="border-collapse:collapse">';
+          html += '<tr><th>Name</th><th>Category</th><th>Priority</th><th>Action</th></tr>';
+          for (const r of data.rules) {
+            html += `<tr><td>${escapeHtml(r.rule_name)}</td><td>${escapeHtml(r.category)}</td><td>${escapeHtml(r.priority)}</td><td>${escapeHtml(r.action_text)}</td></tr>`;
+          }
+          html += '</table>';
+          resultDiv.innerHTML = html;
+        } else {
+          resultDiv.innerHTML = '<div class="error">Failed to fetch rules.</div>';
+        }
+      } catch(err) {
+        resultDiv.innerHTML = `<div class="error">Error: ${escapeHtml(err.message)}</div>`;
+      }
+    };
+  </script>
+</body>
+</html>

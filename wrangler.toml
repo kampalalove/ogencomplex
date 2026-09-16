@@ -1,0 +1,11 @@
+name = "ogen-u"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+kv_namespaces = [
+  { binding = "KV", id = "YOUR_KV_NAMESPACE_ID" },
+  { binding = "LEDGER", id = "YOUR_LEDGER_KV_NAMESPACE_ID" }
+]
+
+[vars]
+DEPLOY_SECRET = "replace-with-a-strong-random-secret"
